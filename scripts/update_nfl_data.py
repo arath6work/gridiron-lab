@@ -29,7 +29,7 @@ def num(row, key):
         return 0.0
 
 def main():
-    schedules = read_csv(f'{BASE}/schedules/schedules.csv')
+    schedules = read_csv(f'{BASE}/schedules/games.csv')
     output = {'source':'nflverse','updatedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'seasons':{}}
     for season in SEASONS:
         games = [g for g in schedules if str(g.get('season','')) == str(season) and g.get('game_type','REG') == 'REG']
