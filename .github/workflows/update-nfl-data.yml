@@ -1,0 +1,33 @@
+name: Update NFL data
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */3 * 9-12 *'
+    - cron: '17 */3 * 1-2 *'
+  push:
+    paths:
+      - 'scripts/update_nfl_data.py'
+      - '.github/workflows/update-nfl-data.yml'
+permissions:
+  contents: write
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download and normalize nflverse data
+        run: python scripts/update_nfl_data.py
+      - name: Commit updated data
+        run: |
+          if git diff --quiet -- data/nfl.json; then
+            echo "No data changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/nfl.json
+          git commit -m "Update NFL data"
+          git push
