@@ -79,6 +79,25 @@ function renderChart(){
  offenseChart=new Chart($('#offenseChart'),{type:'bar',data:{labels:top.map(t=>t.abbr),datasets:[{label:'Yardas totales',data:top.map(t=>t.gp?Math.round(t.totalYards/t.gp):0),backgroundColor:top.map((_,i)=>i===0?'#f0b323':'#4b9bd8'),borderRadius:2,maxBarThickness:28}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#0c1319'}},scales:{x:{grid:{display:false},ticks:{color:'#9aabb7',font:{size:10}},border:{display:false}},y:{grid:{color:'#2a3944'},ticks:{color:'#8294a1',font:{size:10}},border:{display:false}}}}});
 }
 function currentSeason(){return $('#season')?.value||String(new Date().getFullYear())}
+
+function populateWeekFilter() {
+  const select = $('#week-filter');
+  if (!select) return;
+
+  const selected = select.value || 'all';
+  const weeks = [...new Set(
+    games.map(g => Number(g.week)).filter(Number.isFinite)
+  )].sort((a, b) => a - b);
+
+  select.innerHTML =
+    '<option value="all">Todas</option>' +
+    weeks.map(w =>
+      `<option value="${w}">Semana ${w}</option>`
+    ).join('');
+
+  select.value = weeks.includes(Number(selected)) ? selected : 'all';
+}
+
 function loadSeason(){
  const key=currentSeason();
  const data=allData?.seasons?.[key];
@@ -86,7 +105,8 @@ function loadSeason(){
   teams=[];games=[];
   const banner=$('.demo-banner'); if(banner) banner.innerHTML='<span>SIN DATOS</span> No hay datos publicados para la temporada '+key+'. Prueba otra temporada.';
  } else { teams=data.teams||[]; games=data.games||[]; }
- renderGames();renderOffense();renderDefense();renderStandings();renderPower();renderPlayoffs();renderMetrics();renderChart();
+ populateWeekFilter();
+renderGames();renderOffense();renderDefense();renderStandings();renderPower();renderPlayoffs();renderMetrics();renderChart();
 }
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{
  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b===btn));
