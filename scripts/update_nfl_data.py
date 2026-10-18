@@ -39,7 +39,31 @@ def main():
     for season in SEASONS:
         all_games = [g for g in schedules if str(g.get('season','')) == str(season)]
         # Include regular season and postseason; preserve game_type for filtering.
-        stats = {abbr:{'abbr':abbr,'name':info[0],'conf':info[1],'div':info[2],'gp':0,'w':0,'l':0,'t':0,'points':0,'pointsAllowed':0,'pass':0,'rush':0,'passAllowed':0,'rushAllowed':0,'epa':0,'plays':0,'successPlays':0,'epaPlays':0,'turnovers':0} for abbr,info in TEAM_INFO.items()}
+       
+        season_teams = sorted({
+            team
+            for g in all_games
+            for team in (g.get('away_team', ''), g.get('home_team', ''))
+            if team in TEAM_INFO
+        })
+
+        stats = {
+            abbr: {
+                'abbr': abbr,
+                'name': TEAM_INFO[abbr][0],
+                'conf': TEAM_INFO[abbr][1],
+                'div': TEAM_INFO[abbr][2],
+                'gp': 0, 'w': 0, 'l': 0, 't': 0,
+                'points': 0, 'pointsAllowed': 0,
+                'pass': 0, 'rush': 0,
+                'passAllowed': 0, 'rushAllowed': 0,
+                'epa': 0, 'plays': 0,
+                'successPlays': 0, 'epaPlays': 0,
+                'turnovers': 0
+            }
+            for abbr in season_teams
+        }
+
         cooked_games=[]
         for g in all_games:
             away, home = g.get('away_team',''), g.get('home_team','')
