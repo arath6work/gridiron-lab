@@ -4,6 +4,19 @@ let allData = null;
 let teams = [];
 let games = [];
 let offenseChart = null;
+const tableSort = { offense: { key: 'totalYards', dir: 'desc' }, defense: { key: 'yardsAllowed', dir: 'asc' }, standings: { key: 'pct', dir: 'desc' } };
+function newestSeason(){
+ const seasons=Object.keys(allData?.seasons||{}).sort((a,b)=>Number(b)-Number(a));
+ return seasons.find(s=>(allData.seasons[s].games||[]).length>0)||seasons[0]||'';
+}
+function sortValue(team,key){
+ const gp=Number(team.gp)||0;
+ const values={totalYards:team.totalYards, yardsPerGame:gp?team.totalYards/gp:0, pass:team.pass, rush:team.rush, points:team.points, pointsPerGame:gp?team.points/gp:0, yardsAllowed:team.yardsAllowed, yardsAllowedPerGame:gp?team.yardsAllowed/gp:0, passAllowed:team.passAllowed, rushAllowed:team.rushAllowed, pointsAllowed:team.pointsAllowed, pointsAllowedPerGame:gp?team.pointsAllowed/gp:0, pct:pct(team), w:team.w, l:team.l, t:team.t, diff:team.diff, div:team.div, name:team.name};
+ return values[key]??team[key]??0;
+}
+function sortedTeams(list,kind){const s=tableSort[kind];return [...list].sort((a,b)=>{const av=sortValue(a,s.key),bv=sortValue(b,s.key);const cmp=typeof av==='string'?String(av).localeCompare(String(bv)):((Number(av)||0)-(Number(bv)||0));return (s.dir==='asc'?cmp:-cmp)||String(a.name).localeCompare(String(b.name));});}
+function setupSortableHeaders(){document.querySelectorAll('th[data-sort-table][data-sort-key]').forEach(th=>{th.tabIndex=0;th.setAttribute('role','button');th.title='Pulsa para ordenar';const run=()=>{const kind=th.dataset.sortTable,key=th.dataset.sortKey,s=tableSort[kind];if(!s)return;if(s.key===key)s.dir=s.dir==='desc'?'asc':'desc';else{s.key=key;s.dir=kind==='defense'?'asc':'desc';}renderSortable(kind);};th.addEventListener('click',run);th.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();run();}});});}
+function renderSortable(kind){if(kind==='offense')renderOffense();if(kind==='defense')renderDefense();if(kind==='standings')renderStandings();document.querySelectorAll(`th[data-sort-table="${kind}"][data-sort-key]`).forEach(th=>{const s=tableSort[kind];th.classList.toggle('sort-active',th.dataset.sortKey===s.key);const base=th.dataset.label||th.textContent.replace(/[ ↑↓↕]+$/,'');th.dataset.label=base;th.textContent=base+(th.dataset.sortKey===s.key?(s.dir==='asc'?' ↑':' ↓'):' ↕');});}
 const views = {
   overview:["El juego, en números.","Estadísticas, tendencias y contexto para cada enfrentamiento."],
   partidos:["Partidos","Resultados, calendario y registros de cada juego."],
@@ -30,21 +43,19 @@ function renderGames(){
  $('#recent-games').innerHTML=sortGames(games).slice(0,5).map(g=>gameRow(g,true)).join('')||'<tr><td colspan="5">Todavía no hay partidos disponibles.</td></tr>';
 }
 function renderOffense(){
- const q=($('#offense-search')?.value||'').toLowerCase(),sort=$('#offense-sort')?.value||'totalYards';
- const keys={yards:'totalYards',points:'points',pass:'pass',rush:'rush'};
- const key=keys[sort]||sort;
- const list=teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)).sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0));
- $('#offense-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.gp}</td><td>${fmt(t.totalYards)}</td><td>${t.gp?fmt(t.totalYards/t.gp):'—'}</td><td>${fmt(t.pass)}</td><td>${fmt(t.rush)}</td><td>${fmt(t.points)}</td><td>${t.gp?(t.points/t.gp).toFixed(1):'—'}</td></tr>`).join('')||'<tr><td colspan="9">Sin resultados.</td></tr>';
+  const q=($('#offense-search')?.value||'').toLowerCase();
+  const list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'offense');
+  $('#offense-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.gp}</td><td>${fmt(t.totalYards)}</td><td>${t.gp?fmt(t.totalYards/t.gp):'—'}</td><td>${fmt(t.pass)}</td><td>${fmt(t.rush)}</td><td>${fmt(t.points)}</td><td>${t.gp?(t.points/t.gp).toFixed(1):'—'}</td></tr>`).join('')||'<tr><td colspan="9">Sin resultados.</td></tr>';
 }
 function renderDefense(){
- const q=($('#defense-search')?.value||'').toLowerCase(),sort=$('#defense-sort')?.value||'yardsAllowed';
- const list=teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)).sort((a,b)=>(Number(a[sort])||0)-(Number(b[sort])||0));
- $('#defense-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.gp}</td><td>${fmt(t.yardsAllowed)}</td><td>${t.gp?fmt(t.yardsAllowed/t.gp):'—'}</td><td>${fmt(t.passAllowed)}</td><td>${fmt(t.rushAllowed)}</td><td>${fmt(t.pointsAllowed)}</td><td>${t.gp?(t.pointsAllowed/t.gp).toFixed(1):'—'}</td></tr>`).join('')||'<tr><td colspan="9">Sin resultados.</td></tr>';
+  const q=($('#defense-search')?.value||'').toLowerCase();
+  const list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'defense');
+  $('#defense-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.gp}</td><td>${fmt(t.yardsAllowed)}</td><td>${t.gp?fmt(t.yardsAllowed/t.gp):'—'}</td><td>${fmt(t.passAllowed)}</td><td>${fmt(t.rushAllowed)}</td><td>${fmt(t.pointsAllowed)}</td><td>${t.gp?(t.pointsAllowed/t.gp).toFixed(1):'—'}</td></tr>`).join('')||'<tr><td colspan="9">Sin resultados.</td></tr>';
 }
 function renderStandings(){
- const conf=$('#conference-filter')?.value||'all';
- const list=teams.filter(t=>conf==='all'||t.conf===conf).sort((a,b)=>pct(b)-pct(a)||b.diff-a.diff);
- $('#standings-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.div}</td><td>${t.w}</td><td>${t.l}</td><td>${t.t}</td><td>${pct(t).toFixed(3)}</td><td>${fmt(t.points)}</td><td>${fmt(t.pointsAllowed)}</td><td class="${t.diff>0?'winner':''}">${t.diff>0?'+':''}${fmt(t.diff)}</td></tr>`).join('')||'<tr><td colspan="10">Sin datos para esta conferencia.</td></tr>';
+  const conf=$('#conference-filter')?.value||'all';
+  const list=sortedTeams(teams.filter(t=>conf==='all'||t.conf===conf),'standings');
+  $('#standings-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.div}</td><td>${t.w}</td><td>${t.l}</td><td>${t.t}</td><td>${pct(t).toFixed(3)}</td><td>${fmt(t.points)}</td><td>${fmt(t.pointsAllowed)}</td><td class="${t.diff>0?'winner':''}">${t.diff>0?'+':''}${fmt(t.diff)}</td></tr>`).join('')||'<tr><td colspan="10">Sin datos para esta conferencia.</td></tr>';
 }
 function renderPower(){
  const top=[...teams].sort((a,b)=>(b.diff+b.pct*20)-(a.diff+a.pct*20)).slice(0,5);
@@ -106,7 +117,7 @@ function loadSeason(){
   const banner=$('.demo-banner'); if(banner) banner.innerHTML='<span>SIN DATOS</span> No hay datos publicados para la temporada '+key+'. Prueba otra temporada.';
  } else { teams=data.teams||[]; games=data.games||[]; }
  populateWeekFilter();
-renderGames();renderOffense();renderDefense();renderStandings();renderPower();renderPlayoffs();renderMetrics();renderChart();
+renderGames();renderOffense();renderDefense();renderStandings();renderSortable('offense');renderSortable('defense');renderSortable('standings');renderPower();renderPlayoffs();renderMetrics();renderChart();
 }
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{
  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b===btn));
@@ -115,8 +126,8 @@ document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click'
 }));
 document.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click',()=>document.querySelector(`[data-view="${btn.dataset.go}"]`)?.click()));
 ['game-search','week-filter'].forEach(id=>$('#'+id)?.addEventListener('input',renderGames));
-['offense-search','offense-sort'].forEach(id=>$('#'+id)?.addEventListener('input',renderOffense));
-['defense-search','defense-sort'].forEach(id=>$('#'+id)?.addEventListener('input',renderDefense));
+$('#offense-search')?.addEventListener('input',renderOffense);
+$('#defense-search')?.addEventListener('input',renderDefense);
 $('#conference-filter')?.addEventListener('change',renderStandings);
 $('#season')?.addEventListener('change',loadSeason);
 async function init(){
