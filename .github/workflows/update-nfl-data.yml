@@ -42,5 +42,8 @@ jobs:
           git add data/nfl.json
           git commit -m "Update NFL data"
 
-          git pull --rebase origin main
+          git fetch origin main
+          git reset --soft origin/main
+          git add data/nfl.json
+          git commit --amend --no-edit
           git push origin HEAD:main
