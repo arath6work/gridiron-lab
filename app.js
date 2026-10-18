@@ -43,14 +43,18 @@ function renderGames(){
  $('#recent-games').innerHTML=sortGames(games).slice(0,5).map(g=>gameRow(g,true)).join('')||'<tr><td colspan="5">Todavía no hay partidos disponibles.</td></tr>';
 }
 function renderOffense(){
-  const q=($('#offense-search')?.value||'').toLowerCase();
-  const list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'offense');
-  $('#offense-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.gp}</td><td>${fmt(t.totalYards)}</td><td>${t.gp?fmt(t.totalYards/t.gp):'—'}</td><td>${fmt(t.pass)}</td><td>${fmt(t.rush)}</td><td>${fmt(t.points)}</td><td>${t.gp?(t.points/t.gp).toFixed(1):'—'}</td></tr>`).join('')||'<tr><td colspan="9">Sin resultados.</td></tr>';
+ const q=($('#offense-search')?.value||'').toLowerCase(), mode=$('#offense-mode')?.value||'total';
+ const columns={total:[['GP','gp'],['YDS','totalYards'],['YDS/G','yardsPerGame'],['PASANDO NETO','pass'],['CORRIENDO','rush'],['PTS','points'],['PTS/G','pointsPerGame']],pass:[['GP','gp'],['YDS NETAS','pass'],['YDS/G','passPerGame'],['CAPTURAS PERMITIDAS','sacksAllowed'],['PTS','points'],['PTS/G','pointsPerGame']],rush:[['GP','gp'],['YDS TERRESTRES','rush'],['YDS/G','rushPerGame'],['PTS','points'],['PTS/G','pointsPerGame']],receiving:[['GP','gp'],['YDS RECIBIDAS','receiving'],['YDS/G','receivingPerGame'],['PTS','points']],downs:[['PRIMEROS DOWNS','firstDowns'],['3RD DOWN','thirdDownConv'],['3RD DOWN ATT','thirdDownAtt'],['3RD DOWN %','thirdDownRate']]};
+ const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'offense');
+ const table=$('#offense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="offense" data-sort-key="${key}">${label} ↕</th>`).join('');
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>`<td>${t[key]==null?'—':key.toLowerCase().includes('rate')?(Number(t[key])*100).toFixed(1)+'%':key==='pointsPerGame'||key==='passPerGame'||key==='rushPerGame'||key==='receivingPerGame'?Number(t[key]||0).toFixed(1):fmt(t[key])}</td>`).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function renderDefense(){
-  const q=($('#defense-search')?.value||'').toLowerCase();
-  const list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'defense');
-  $('#defense-table').innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td><td>${t.gp}</td><td>${fmt(t.yardsAllowed)}</td><td>${t.gp?fmt(t.yardsAllowed/t.gp):'—'}</td><td>${fmt(t.passAllowed)}</td><td>${fmt(t.rushAllowed)}</td><td>${fmt(t.pointsAllowed)}</td><td>${t.gp?(t.pointsAllowed/t.gp).toFixed(1):'—'}</td></tr>`).join('')||'<tr><td colspan="9">Sin resultados.</td></tr>';
+ const q=($('#defense-search')?.value||'').toLowerCase(), mode=$('#defense-mode')?.value||'total';
+ const columns={total:[['GP','gp'],['YDS PERMITIDAS','yardsAllowed'],['YDS/G','yardsAllowedPerGame'],['PASE NETO PERMITIDO','passAllowed'],['CARRERA PERMITIDA','rushAllowed'],['PTS PERMITIDOS','pointsAllowed'],['PTS/G','pointsAllowedPerGame']],pass:[['GP','gp'],['YDS NETAS PERMITIDAS','passAllowed'],['YDS/G','passAllowedPerGame'],['CAPTURAS','sacks'],['PTS PERMITIDOS','pointsAllowed']],rush:[['GP','gp'],['YDS TERRESTRES PERMITIDAS','rushAllowed'],['YDS/G','rushAllowedPerGame'],['PTS PERMITIDOS','pointsAllowed']],receiving:[['GP','gp'],['YDS RECIBIDAS PERMITIDAS','receivingAllowed'],['YDS/G','receivingAllowedPerGame']],downs:[['PRIMEROS DOWNS PERMITIDOS','firstDownsAllowed'],['3RD DOWN CONCEDIDO','thirdDownConvAllowed'],['3RD DOWN ATT','thirdDownAttAllowed'],['3RD DOWN % PERMITIDO','thirdDownRateAllowed']]};
+ const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'defense');
+ const table=$('#defense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="defense" data-sort-key="${key}">${label} ↕</th>`).join('');
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>`<td>${t[key]==null?'—':key.toLowerCase().includes('rate')?(Number(t[key])*100).toFixed(1)+'%':key.endsWith('PerGame')?Number(t[key]||0).toFixed(1):fmt(t[key])}</td>`).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function renderStandings(){
   const conf=$('#conference-filter')?.value||'all';
@@ -154,3 +158,5 @@ async function init(){
 }
 setupSortableHeaders();
 init();
+
+document.addEventListener('click', e=>{const th=e.target.closest('th[data-sort-table][data-sort-key]'); if(!th)return; const kind=th.dataset.sortTable,key=th.dataset.sortKey,state=tableSort[kind]; if(!state)return; if(state.key===key)state.dir=state.dir==='desc'?'asc':'desc';else{state.key=key;state.dir=kind==='defense'?'asc':'desc';} renderSortable(kind);});
