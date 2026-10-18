@@ -120,6 +120,9 @@ function loadSeason(){
 renderGames();renderOffense();renderDefense();renderStandings();renderSortable('offense');renderSortable('defense');renderSortable('standings');renderPower();renderPlayoffs();renderMetrics();renderChart();
 }
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{
+ const seasonSelect=$('#season');
+ const latest=newestSeason();
+ if(seasonSelect&&latest&&seasonSelect.value!==latest){seasonSelect.value=latest;loadSeason();}
  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b===btn));
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+btn.dataset.view));
  $('#page-title').textContent=views[btn.dataset.view][0];$('#page-subtitle').textContent=views[btn.dataset.view][1];
@@ -149,4 +152,5 @@ async function init(){
   $('#games-table').innerHTML='<tr><td colspan="7">No se pudieron cargar los datos.</td></tr>';
  }
 }
+setupSortableHeaders();
 init();
