@@ -102,9 +102,9 @@ def main():
             t['firstDowns']=int(t['firstDowns']); t['firstDownsAllowed']=int(t['firstDownsAllowed'])
             t['thirdDownRate']=t['thirdDownConv']/t['thirdDownAtt'] if t['thirdDownAtt'] else None
             t['thirdDownRateAllowed']=t['thirdDownConvAllowed']/t['thirdDownAttAllowed'] if t['thirdDownAttAllowed'] else None
-            for k in ('points','pointsAllowed','pass','rush','passAllowed','rushAllowed','receiving','receivingAllowed','totalYards','yardsAllowed','diff','thirdDownRate','thirdDownRateAllowed'):
-                if isinstance(t[k], (int, float)):
-    t[k] = round(t[k], 1)
+            for k in ('points','pointsAllowed','pass','rush','passAllowed','rushAllowed','totalYards','yardsAllowed','diff','pointsPerGame','pointsAllowedPerGame','yardsPerGame','yardsAllowedPerGame','epa','epaPerPlay','successRate','pct'):
+                if isinstance(t.get(k), (int, float)):
+                    t[k] = round(t[k], 1)
             teams.append(t)
         output['seasons'][str(season)]={'teams':teams,'games':sorted(cooked_games,key=lambda x:(x['week'],x['gameday'],x['away']))}
     os.makedirs('data',exist_ok=True)
