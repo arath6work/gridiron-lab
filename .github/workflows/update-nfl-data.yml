@@ -1,6 +1,4 @@
-
 name: Update NFL data
-
 on:
   workflow_dispatch:
   schedule:
@@ -10,51 +8,26 @@ on:
     paths:
       - 'scripts/update_nfl_data.py'
       - '.github/workflows/update-nfl-data.yml'
-
 permissions:
   contents: write
-
 jobs:
   update-data:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Download and normalize nflverse data
         run: python scripts/update_nfl_data.py
-
-      
       - name: Commit updated data
         run: |
-          cp data/nfl.json /tmp/nfl.json
-
-          for attempt in 1 2 3; do
-            git fetch origin main
-            git reset --hard origin/main
-            cp /tmp/nfl.json data/nfl.json
-
-            if git diff --quiet -- data/nfl.json; then
-              echo "No data changes"
-              exit 0
-            fi
-
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/nfl.json
-            git commit -m "Update NFL data"
-
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-
-            echo "Push failed; retrying ($attempt/3)"
-          done
-
-          exit 1
+          if git diff --quiet -- data/nfl.json; then
+            echo "No data changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/nfl.json
+          git commit -m "Update NFL data"
+          git push
