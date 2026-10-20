@@ -44,17 +44,29 @@ function renderGames(){
 }
 function renderOffense(){
  const q=($('#offense-search')?.value||'').toLowerCase(), mode=$('#offense-mode')?.value||'total';
- const columns={total:[['GP','gp'],['YDS','totalYards'],['YDS/G','yardsPerGame'],['PASANDO NETO','pass'],['CORRIENDO','rush'],['PTS','points'],['PTS/G','pointsPerGame']],pass:[['GP','gp'],['YDS NETAS','pass'],['YDS/G','passPerGame'],['CAPTURAS PERMITIDAS','sacksAllowed'],['PTS','points'],['PTS/G','pointsPerGame']],rush:[['GP','gp'],['YDS TERRESTRES','rush'],['YDS/G','rushPerGame'],['PTS','points'],['PTS/G','pointsPerGame']],receiving:[['GP','gp'],['YDS RECIBIDAS','receiving'],['YDS/G','receivingPerGame'],['PTS','points']],downs:[['PRIMEROS DOWNS','firstDowns'],['3RD DOWN','thirdDownConv'],['3RD DOWN ATT','thirdDownAtt'],['3RD DOWN %','thirdDownRate']]};
+ const columns={
+  total:[['GP','gp'],['TOTAL YDS','totalYards'],['YDS/G','yardsPerGame'],['PASSING YDS','passNet'],['YDS/G','passPerGame'],['RUSHING YDS','rush'],['YDS/G','rushPerGame'],['PTS','points'],['PTS/G','pointsPerGame']],
+  pass:[['GP','gp'],['CMP','passComp'],['ATT','passAtt'],['CMP%','passPct'],['YDS','passNet'],['AVG','passAvg'],['YDS/G','passPerGame'],['LNG','passLong'],['TD','passTD'],['INT','interceptions'],['SACK','sacksAllowed'],['SYL','sackYardsAllowed'],['RTG','passerRating']],
+  rush:[['GP','gp'],['ATT','rushAtt'],['YDS','rush'],['AVG','rushAvg'],['YDS/G','rushPerGame'],['LNG','rushLong'],['TD','rushTD'],['FUM','rushFumbles'],['LST','rushFumblesLost']],
+  receiving:[['GP','gp'],['REC','receptions'],['YDS','receiving'],['AVG','receivingAvg'],['YDS/G','receivingPerGame'],['LNG','receivingLong'],['TD','receivingTD'],['FUM','receivingFumbles'],['LST','receivingFumblesLost']],
+  downs:[['GP','gp'],['1ST DOWNS','firstDowns'],['RUSH','firstDownRush'],['PASS','firstDownPass'],['PEN','firstDownPenalty'],['3RD MD','thirdDownConv'],['3RD ATT','thirdDownAtt'],['3RD %','thirdDownRate'],['4TH MD','fourthDownConv'],['4TH ATT','fourthDownAtt'],['4TH %','fourthDownRate'],['PEN','penalties'],['PEN YDS','penaltyYards']]
+ };
  const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'offense');
  const table=$('#offense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="offense" data-sort-key="${key}">${label} ↕</th>`).join('');
- table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>`<td>${t[key]==null?'—':key.toLowerCase().includes('rate')?(Number(t[key])*100).toFixed(1)+'%':key==='pointsPerGame'||key==='passPerGame'||key==='rushPerGame'||key==='receivingPerGame'?Number(t[key]||0).toFixed(1):fmt(t[key])}</td>`).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>{const v=t[key];let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPct'?(Number(v)*100).toFixed(1)+'%':(['passAvg','rushAvg','receivingAvg','passerRating','yardsPerGame','passPerGame','rushPerGame','receivingPerGame','pointsPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function renderDefense(){
  const q=($('#defense-search')?.value||'').toLowerCase(), mode=$('#defense-mode')?.value||'total';
- const columns={total:[['GP','gp'],['YDS PERMITIDAS','yardsAllowed'],['YDS/G','yardsAllowedPerGame'],['PASE NETO PERMITIDO','passAllowed'],['CARRERA PERMITIDA','rushAllowed'],['PTS PERMITIDOS','pointsAllowed'],['PTS/G','pointsAllowedPerGame']],pass:[['GP','gp'],['YDS NETAS PERMITIDAS','passAllowed'],['YDS/G','passAllowedPerGame'],['CAPTURAS','sacks'],['PTS PERMITIDOS','pointsAllowed']],rush:[['GP','gp'],['YDS TERRESTRES PERMITIDAS','rushAllowed'],['YDS/G','rushAllowedPerGame'],['PTS PERMITIDOS','pointsAllowed']],receiving:[['GP','gp'],['YDS RECIBIDAS PERMITIDAS','receivingAllowed'],['YDS/G','receivingAllowedPerGame']],downs:[['PRIMEROS DOWNS PERMITIDOS','firstDownsAllowed'],['3RD DOWN CONCEDIDO','thirdDownConvAllowed'],['3RD DOWN ATT','thirdDownAttAllowed'],['3RD DOWN % PERMITIDO','thirdDownRateAllowed']]};
+ const columns={
+  total:[['GP','gp'],['TOTAL YDS PERMITIDAS','yardsAllowed'],['YDS/G','yardsAllowedPerGame'],['PASSING YDS','passAllowedNet'],['YDS/G','passAllowedPerGame'],['RUSHING YDS','rushAllowed'],['YDS/G','rushAllowedPerGame'],['PTS','pointsAllowed'],['PTS/G','pointsAllowedPerGame']],
+  pass:[['GP','gp'],['CMP PERMITIDAS','passCompAllowed'],['ATT','passAttAllowed'],['CMP%','passPctAllowed'],['YDS','passAllowedNet'],['AVG','passAvgAllowed'],['YDS/G','passAllowedPerGame'],['LNG','passLongAllowed'],['TD','passTDAllowed'],['INT','interceptionsMade'],['SACK','sacksMade'],['SYL','sacksMadeYards'],['RTG','passerRatingAllowed']],
+  rush:[['GP','gp'],['ATT','rushAttAllowed'],['YDS','rushAllowed'],['AVG','rushAvgAllowed'],['YDS/G','rushAllowedPerGame'],['LNG','rushLongAllowed'],['TD','rushTDAllowed'],['FUM','rushFumblesAllowed'],['LST','rushFumblesLostAllowed']],
+  receiving:[['GP','gp'],['REC','receptionsAllowed'],['YDS','receivingAllowed'],['AVG','receivingAvgAllowed'],['YDS/G','receivingAllowedPerGame'],['LNG','receivingLongAllowed'],['TD','receivingTDAllowed'],['FUM','receivingFumblesAllowed'],['LST','receivingFumblesLostAllowed']],
+  downs:[['GP','gp'],['1ST DOWNS PERMITIDOS','firstDownsAllowed'],['RUSH','firstDownRushAllowed'],['PASS','firstDownPassAllowed'],['PEN','firstDownPenaltyAllowed'],['3RD MD','thirdDownConvAllowed'],['3RD ATT','thirdDownAttAllowed'],['3RD %','thirdDownRateAllowed'],['4TH MD','fourthDownConvAllowed'],['4TH ATT','fourthDownAttAllowed'],['4TH %','fourthDownRateAllowed'],['PEN','penaltiesAllowed'],['PEN YDS','penaltyYardsAllowed']]
+ };
  const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'defense');
  const table=$('#defense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="defense" data-sort-key="${key}">${label} ↕</th>`).join('');
- table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>`<td>${t[key]==null?'—':key.toLowerCase().includes('rate')?(Number(t[key])*100).toFixed(1)+'%':key.endsWith('PerGame')?Number(t[key]||0).toFixed(1):fmt(t[key])}</td>`).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>{const v=t[key];let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPctAllowed'?(Number(v)*100).toFixed(1)+'%':(['passAvgAllowed','rushAvgAllowed','receivingAvgAllowed','passerRatingAllowed','yardsAllowedPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame','pointsAllowedPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function renderStandings(){
   const conf=$('#conference-filter')?.value||'all';
@@ -83,7 +95,7 @@ function renderMetrics(){
  if(values[1]) values[1].textContent=avgYards?avgYards.toFixed(1):'—';
  if(values[2]) values[2].innerHTML=`${perfect} <small>equipos</small>`;
  if(values[3]) values[3].textContent=avgDiff?(avgDiff>0?'+':'')+avgDiff.toFixed(1):'—';
- const chip=$('.season-chip'); if(chip) chip.innerHTML='<span class="live-dot"></span> NFL · TEMPORADA '+currentSeason();
+ const chip=$('.season-chip'); if(chip) chip.innerHTML=`<span class="live-dot"></span> NFL · TEMPORADA ${currentSeason()} · ${($('#game-type')?.value||'REG')==='POST'?'PLAYOFFS':'REGULAR'}`;
 }
 function renderChart(){
  if(!window.Chart||!$('#offenseChart'))return;
@@ -113,10 +125,11 @@ function populateWeekFilter() {
 
 function loadSeason(){
  const key=currentSeason();
- const data=allData?.seasons?.[key];
- if(!data){
-  teams=[];games=[];
- } else { teams=data.teams||[]; games=data.games||[]; }
+ const chip=document.querySelector('.season-chip'); if(chip) chip.innerHTML=`<span class="live-dot"></span> NFL · TEMPORADA ${key} · ${($('#game-type')?.value||'REG')==='POST'?'PLAYOFFS':'REGULAR'}`;
+ const seasonData=allData?.seasons?.[key];
+ const type=$('#game-type')?.value||'REG';
+ const data=seasonData?.types?.[type] || (type==='REG'?seasonData:null);
+ if(!data){ teams=[]; games=[]; } else { teams=data.teams||[]; games=data.games||[]; }
  populateWeekFilter();
 renderGames();renderOffense();renderDefense();renderStandings();renderSortable('offense');renderSortable('defense');renderSortable('standings');renderPower();renderPlayoffs();renderMetrics();renderChart();
 }
@@ -134,16 +147,17 @@ $('#offense-search')?.addEventListener('input',renderOffense);
 $('#defense-search')?.addEventListener('input',renderDefense);
 $('#offense-mode')?.addEventListener('change',()=>{
  const mode=$('#offense-mode').value;
- tableSort.offense.key=({total:'totalYards',pass:'pass',rush:'rush',receiving:'receiving',downs:'thirdDownRate'})[mode]||'totalYards';
+ tableSort.offense.key=({total:'totalYards',pass:'passNet',rush:'rush',receiving:'receiving',downs:'firstDowns'})[mode]||'totalYards';
  tableSort.offense.dir='desc'; renderSortable('offense');
 });
 $('#defense-mode')?.addEventListener('change',()=>{
  const mode=$('#defense-mode').value;
- tableSort.defense.key=({total:'yardsAllowed',pass:'passAllowed',rush:'rushAllowed',receiving:'receivingAllowed',downs:'thirdDownRateAllowed'})[mode]||'yardsAllowed';
+ tableSort.defense.key=({total:'yardsAllowed',pass:'passAllowedNet',rush:'rushAllowed',receiving:'receivingAllowed',downs:'firstDownsAllowed'})[mode]||'yardsAllowed';
  tableSort.defense.dir='asc'; renderSortable('defense');
 });
 $('#conference-filter')?.addEventListener('change',renderStandings);
 $('#season')?.addEventListener('change',loadSeason);
+$('#game-type')?.addEventListener('change',loadSeason);
 async function init(){
  try{
   const response=await fetch('data/nfl.json?cache='+Date.now(),{cache:'no-store'});
