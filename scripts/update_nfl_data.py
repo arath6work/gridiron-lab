@@ -68,13 +68,13 @@ def main():
             if offense not in stats or defense not in stats: continue
             if p.get('play_type') not in ('pass','run') and num(p,'pass_attempt') == 0 and num(p,'rush_attempt') == 0 and num(p,'sack') == 0: continue
             py = num(p,'passing_yards')
-            # nflverse stores sack_yards as a negative value on sack plays.
-            # Net passing yards = passing yards + negative sack yards (counted once).
-            net_py = py + min(0, num(p, 'sack_yards'))
+            # Keep passing yards and receiving yards as separate statistics.
+            # Use the source's passing_yards field directly; do not substitute
+            # receiving_yards or subtract sack yards here.
             ry = num(p,'rushing_yards')
-            stats[offense]['pass'] += net_py
+            stats[offense]['pass'] += py
             stats[offense]['rush'] += ry
-            stats[defense]['passAllowed'] += net_py
+            stats[defense]['passAllowed'] += py
             stats[defense]['rushAllowed'] += ry
             stats[offense]['receiving'] += num(p,'receiving_yards')
             stats[defense]['receivingAllowed'] += num(p,'receiving_yards')
@@ -88,19 +88,26 @@ def main():
                 stats[defense]['sacks'] += 1; stats[offense]['sacksAllowed'] += 1
         teams=[]
         for t in stats.values():
-            t['totalYards']=t['pass']+t['rush']; t['yardsAllowed']=t['passAllowed']+t['rushAllowed']
-            t['pct']=(t['w']+0.5*t['t'])/t['gp'] if t['gp'] else 0
-            t['diff']=t['points']-t['pointsAllowed']
-            t['receivingPerGame']=t['receiving']/t['gp'] if t['gp'] else 0
-            t['passPerGame']=t['pass']/t['gp'] if t['gp'] else 0
-            t['rushPerGame']=t['rush']/t['gp'] if t['gp'] else 0
-            t['passAllowedPerGame']=t['passAllowed']/t['gp'] if t['gp'] else 0
-            t['rushAllowedPerGame']=t['rushAllowed']/t['gp'] if t['gp'] else 0
-            t['receivingAllowedPerGame']=t['receivingAllowed']/t['gp'] if t['gp'] else 0
+            t['totalYards'] = t['pass'] + t['rush']
+            t['yardsAllowed'] = t['passAllowed'] + t['rushAllowed']
+            gp = t['gp']
+            t['pct'] = (t['w'] + 0.5*t['t'])/gp if gp else 0
+            t['diff'] = t['points'] - t['pointsAllowed']
+            t['totalYardsPerGame'] = t['totalYards']/gp if gp else 0
+            t['yardsPerGame'] = t['totalYardsPerGame']
+            t['yardsAllowedPerGame'] = t['yardsAllowed']/gp if gp else 0
+            t['pointsPerGame'] = t['points']/gp if gp else 0
+            t['pointsAllowedPerGame'] = t['pointsAllowed']/gp if gp else 0
+            t['receivingPerGame'] = t['receiving']/gp if gp else 0
+            t['passPerGame'] = t['pass']/gp if gp else 0
+            t['rushPerGame'] = t['rush']/gp if gp else 0
+            t['passAllowedPerGame'] = t['passAllowed']/gp if gp else 0
+            t['rushAllowedPerGame'] = t['rushAllowed']/gp if gp else 0
+            t['receivingAllowedPerGame'] = t['receivingAllowed']/gp if gp else 0
             t['firstDowns']=int(t['firstDowns']); t['firstDownsAllowed']=int(t['firstDownsAllowed'])
             t['thirdDownRate']=t['thirdDownConv']/t['thirdDownAtt'] if t['thirdDownAtt'] else None
             t['thirdDownRateAllowed']=t['thirdDownConvAllowed']/t['thirdDownAttAllowed'] if t['thirdDownAttAllowed'] else None
-            for k in ('points','pointsAllowed','pass','rush','passAllowed','rushAllowed','receiving','receivingAllowed','totalYards','yardsAllowed','diff','thirdDownRate','thirdDownRateAllowed'):
+            for k in ('points','pointsAllowed','pass','rush','passAllowed','rushAllowed','receiving','receivingAllowed','totalYards','yardsAllowed','diff','thirdDownRate','thirdDownRateAllowed','totalYardsPerGame','yardsPerGame','yardsAllowedPerGame','pointsPerGame','pointsAllowedPerGame','receivingPerGame','passPerGame','rushPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame'):
                 if isinstance(t.get(k), (int, float)):
                     t[k] = round(t[k], 1)
             teams.append(t)
