@@ -11,7 +11,7 @@ function newestSeason(){
 }
 function sortValue(team,key){
  const gp=Number(team.gp)||0;
- const values={totalYards:team.totalYards, yardsPerGame:gp?team.totalYards/gp:0, pass:team.pass, rush:team.rush, points:team.points, pointsPerGame:gp?team.points/gp:0, yardsAllowed:team.yardsAllowed, yardsAllowedPerGame:gp?team.yardsAllowed/gp:0, passAllowed:team.passAllowed, rushAllowed:team.rushAllowed, pointsAllowed:team.pointsAllowed, pointsAllowedPerGame:gp?team.pointsAllowed/gp:0, pct:pct(team), w:team.w, l:team.l, t:team.t, diff:team.diff, div:team.div, name:team.name};
+ const values={totalYards:team.totalYards, yardsPerGame:gp?team.totalYards/gp:0, pass:team.pass, passPerGame:team.passPerGame, rush:team.rush, rushPerGame:team.rushPerGame, receiving:team.receiving, receivingPerGame:team.receivingPerGame, points:team.points, pointsPerGame:gp?team.points/gp:0, yardsAllowed:team.yardsAllowed, yardsAllowedPerGame:gp?team.yardsAllowed/gp:0, passAllowed:team.passAllowed, passAllowedPerGame:team.passAllowedPerGame, rushAllowed:team.rushAllowed, rushAllowedPerGame:team.rushAllowedPerGame, receivingAllowed:team.receivingAllowed, receivingAllowedPerGame:team.receivingAllowedPerGame, pointsAllowed:team.pointsAllowed, pointsAllowedPerGame:gp?team.pointsAllowed/gp:0, sacks:team.sacks, sacksAllowed:team.sacksAllowed, firstDowns:team.firstDowns, firstDownsAllowed:team.firstDownsAllowed, thirdDownConv:team.thirdDownConv, thirdDownAtt:team.thirdDownAtt, thirdDownRate:team.thirdDownRate, thirdDownConvAllowed:team.thirdDownConvAllowed, thirdDownAttAllowed:team.thirdDownAttAllowed, thirdDownRateAllowed:team.thirdDownRateAllowed, gp:team.gp, pct:pct(team), w:team.w, l:team.l, t:team.t, diff:team.diff, div:team.div, name:team.name};
  return values[key]??team[key]??0;
 }
 function sortedTeams(list,kind){const s=tableSort[kind];return [...list].sort((a,b)=>{const av=sortValue(a,s.key),bv=sortValue(b,s.key);const cmp=typeof av==='string'?String(av).localeCompare(String(bv)):((Number(av)||0)-(Number(bv)||0));return (s.dir==='asc'?cmp:-cmp)||String(a.name).localeCompare(String(b.name));});}
@@ -135,6 +135,16 @@ document.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click'
 ['game-search','week-filter'].forEach(id=>$('#'+id)?.addEventListener('input',renderGames));
 $('#offense-search')?.addEventListener('input',renderOffense);
 $('#defense-search')?.addEventListener('input',renderDefense);
+$('#offense-mode')?.addEventListener('change',()=>{
+ const mode=$('#offense-mode').value;
+ tableSort.offense.key=({total:'totalYards',pass:'pass',rush:'rush',receiving:'receiving',downs:'thirdDownRate'})[mode]||'totalYards';
+ tableSort.offense.dir='desc'; renderSortable('offense');
+});
+$('#defense-mode')?.addEventListener('change',()=>{
+ const mode=$('#defense-mode').value;
+ tableSort.defense.key=({total:'yardsAllowed',pass:'passAllowed',rush:'rushAllowed',receiving:'receivingAllowed',downs:'thirdDownRateAllowed'})[mode]||'yardsAllowed';
+ tableSort.defense.dir='asc'; renderSortable('defense');
+});
 $('#conference-filter')?.addEventListener('change',renderStandings);
 $('#season')?.addEventListener('change',loadSeason);
 async function init(){
@@ -156,7 +166,6 @@ async function init(){
   $('#games-table').innerHTML='<tr><td colspan="7">No se pudieron cargar los datos.</td></tr>';
  }
 }
-setupSortableHeaders();
 init();
 
 document.addEventListener('click', e=>{const th=e.target.closest('th[data-sort-table][data-sort-key]'); if(!th)return; const kind=th.dataset.sortTable,key=th.dataset.sortKey,state=tableSort[kind]; if(!state)return; if(state.key===key)state.dir=state.dir==='desc'?'asc':'desc';else{state.key=key;state.dir=kind==='defense'?'asc':'desc';} renderSortable(kind);});
