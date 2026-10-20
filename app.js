@@ -83,8 +83,6 @@ function renderMetrics(){
  if(values[1]) values[1].textContent=avgYards?avgYards.toFixed(1):'—';
  if(values[2]) values[2].innerHTML=`${perfect} <small>equipos</small>`;
  if(values[3]) values[3].textContent=avgDiff?(avgDiff>0?'+':'')+avgDiff.toFixed(1):'—';
- const banner=$('.demo-banner');
- if(banner) banner.innerHTML='<span>DATOS CONECTADOS</span> Fuente: nflverse · Actualización: '+(allData.updatedAt?new Date(allData.updatedAt).toLocaleString('es-MX'):'sin fecha')+'. Los datos dependen de la publicación de la fuente.';
  const chip=$('.season-chip'); if(chip) chip.innerHTML='<span class="live-dot"></span> NFL · TEMPORADA '+currentSeason();
 }
 function renderChart(){
@@ -118,7 +116,6 @@ function loadSeason(){
  const data=allData?.seasons?.[key];
  if(!data){
   teams=[];games=[];
-  const banner=$('.demo-banner'); if(banner) banner.innerHTML='<span>SIN DATOS</span> No hay datos publicados para la temporada '+key+'. Prueba otra temporada.';
  } else { teams=data.teams||[]; games=data.games||[]; }
  populateWeekFilter();
 renderGames();renderOffense();renderDefense();renderStandings();renderSortable('offense');renderSortable('defense');renderSortable('standings');renderPower();renderPlayoffs();renderMetrics();renderChart();
@@ -162,7 +159,6 @@ async function init(){
   loadSeason();
  }catch(error){
   console.error(error);
-  const banner=$('.demo-banner');if(banner)banner.innerHTML='<span>ERROR DE DATOS</span> No se pudo cargar data/nfl.json. Ejecuta el flujo “Update NFL data” en GitHub Actions.';
   $('#games-table').innerHTML='<tr><td colspan="7">No se pudieron cargar los datos.</td></tr>';
  }
 }
