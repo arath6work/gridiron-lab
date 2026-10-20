@@ -68,12 +68,9 @@ def main():
             if offense not in stats or defense not in stats: continue
             if p.get('play_type') not in ('pass','run') and num(p,'pass_attempt') == 0 and num(p,'rush_attempt') == 0 and num(p,'sack') == 0: continue
             py = num(p,'passing_yards')
-            # nflverse sack_yards is generally negative; sack_yards_lost, when present, is positive.
-            if p.get('sack_yards_lost') not in ('', None, 'NA', 'nan'):
-                sack_loss = abs(num(p,'sack_yards_lost'))
-            else:
-                sack_loss = abs(min(0, num(p,'sack_yards')))
-            net_py = py - sack_loss
+            # nflverse stores sack_yards as a negative value on sack plays.
+            # Net passing yards = passing yards + negative sack yards (counted once).
+            net_py = py + min(0, num(p, 'sack_yards'))
             ry = num(p,'rushing_yards')
             stats[offense]['pass'] += net_py
             stats[offense]['rush'] += ry
@@ -99,10 +96,11 @@ def main():
             t['rushPerGame']=t['rush']/t['gp'] if t['gp'] else 0
             t['passAllowedPerGame']=t['passAllowed']/t['gp'] if t['gp'] else 0
             t['rushAllowedPerGame']=t['rushAllowed']/t['gp'] if t['gp'] else 0
+            t['receivingAllowedPerGame']=t['receivingAllowed']/t['gp'] if t['gp'] else 0
             t['firstDowns']=int(t['firstDowns']); t['firstDownsAllowed']=int(t['firstDownsAllowed'])
             t['thirdDownRate']=t['thirdDownConv']/t['thirdDownAtt'] if t['thirdDownAtt'] else None
             t['thirdDownRateAllowed']=t['thirdDownConvAllowed']/t['thirdDownAttAllowed'] if t['thirdDownAttAllowed'] else None
-            for k in ('points','pointsAllowed','pass','rush','passAllowed','rushAllowed','totalYards','yardsAllowed','diff','pointsPerGame','pointsAllowedPerGame','yardsPerGame','yardsAllowedPerGame','epa','epaPerPlay','successRate','pct'):
+            for k in ('points','pointsAllowed','pass','rush','passAllowed','rushAllowed','receiving','receivingAllowed','totalYards','yardsAllowed','diff','thirdDownRate','thirdDownRateAllowed'):
                 if isinstance(t.get(k), (int, float)):
                     t[k] = round(t[k], 1)
             teams.append(t)
