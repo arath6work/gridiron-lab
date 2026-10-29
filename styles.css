@@ -9,3 +9,17 @@ th[data-sort-table][data-sort-key] { cursor: pointer; user-select: none; white-s
 th[data-sort-table][data-sort-key]::after { content: ""; }
 th[data-sort-table][data-sort-key]:hover, th.sort-active { color: var(--gold, #f0b323); }
 th[data-sort-table][data-sort-key]:focus-visible { outline: 2px solid #f0b323; outline-offset: -2px; }
+
+/* Segmented navigation for standings and team statistics */
+[hidden]{display:none!important}
+.segmented-tabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--line);margin:0 0 17px}
+.seg-tab{appearance:none;border:0;border-bottom:3px solid transparent;background:transparent;color:#9eafbb;padding:13px 22px;margin:0;font-weight:700;font-size:12px;letter-spacing:.2px;min-width:130px}
+.seg-tab:hover{color:var(--text);background:#17232e}
+.seg-tab.active{color:var(--text);border-bottom-color:var(--gold)}
+.sub-tabs{gap:7px;border:0;margin-top:-5px;margin-bottom:17px}
+.sub-tabs .seg-tab{border:1px solid var(--line);border-radius:4px;min-width:0;padding:9px 14px;background:#14212b}
+.sub-tabs .seg-tab.active{border-color:var(--gold);color:var(--gold);background:#272719}
+.stats-panel{min-width:0}
+th[data-sort-table]{cursor:pointer}
+th[data-sort-table]:hover{color:#fff}
+@media(max-width:700px){.seg-tab{flex:1;min-width:0;padding:12px 10px;font-size:11px}.sub-tabs .seg-tab{flex:0 0 auto}}
