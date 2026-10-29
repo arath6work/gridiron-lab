@@ -71,3 +71,62 @@ tbody tr:hover td.sorted-column{background:#fff0bf!important}
  .main{padding:20px 10px}
  .page-heading{align-items:flex-start;flex-direction:column}.page-heading h1{font-size:34px}
 }
+/* Pegar AL FINAL de styles.css. No altera el resaltado crema de la columna ordenada. */
+#games-table td,
+#offense-table td,
+#defense-table td,
+#standings-table td {
+  color: #303640 !important;
+}
+
+#games-table td.team-cell,
+#offense-table td.team-cell,
+#defense-table td.team-cell,
+#standings-table td.team-cell {
+  color: #20242a !important;
+  font-weight: 700;
+}
+
+#games-table td .muted,
+#offense-table td .muted,
+#defense-table td .muted,
+#standings-table td .muted {
+  color: #596371 !important;
+}
+
+/* Mantiene el fondo crema y el texto oscuro de la columna seleccionada. */
+td.sorted-column {
+  background: var(--cream, #fff6d9) !important;
+  color: #17191d !important;
+  font-weight: 700;
+}
+
+/* Escudos/siglas de equipos: texto blanco sobre fondo oscuro. */
+.team-badge {
+  color: #ffffff !important;
+  background: #263847 !important;
+  border: 1px solid #3b4d5a;
+  font-weight: 800;
+  text-shadow: 0 1px 1px #00000055;
+}
+
+.team-id > div,
+.power-row .team-id,
+.playoff-row .team-id {
+  color: #20242a;
+}
+
+.team-record,
+.playoff-record,
+.power-row .rank {
+  color: #596371 !important;
+}
+
+.metric-label,
+.metric-value small,
+.metric-foot,
+.section-note,
+.controls label,
+.filter-row label {
+  color: #4b5563;
+}
