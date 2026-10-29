@@ -7,19 +7,28 @@ on:
   push:
     paths:
       - 'scripts/update_nfl_data.py'
+      - 'scripts/fix_receiving_stats.py'
       - '.github/workflows/update-nfl-data.yml'
+
 permissions:
   contents: write
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
       - name: Download and normalize nflverse data
         run: python scripts/update_nfl_data.py
+
+      - name: Fix receiving yards
+        run: python scripts/fix_receiving_stats.py
+
       - name: Commit updated data
         run: |
           if git diff --quiet -- data/nfl.json; then
