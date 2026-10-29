@@ -10,6 +10,10 @@ on:
       - 'scripts/fix_receiving_stats.py'
       - '.github/workflows/update-nfl-data.yml'
 
+concurrency:
+  group: update-nfl-data
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
