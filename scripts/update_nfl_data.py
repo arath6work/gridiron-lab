@@ -268,25 +268,51 @@ def build_type(season, kind, schedule_rows, weekly_rows, pbp_summary):
 
     rows_by_team = defaultdict(list)
     filtered_rows = []
+    # stats_team_week must contain exactly one record per team/game. A repeated
+    # team-game row doubles that team's passing/rushing/receiving totals. Filter
+    # the season explicitly and deduplicate by game_id before ANY aggregation.
+    seen_team_games = {}
+    duplicate_rows = 0
     for row in weekly_rows:
+        if str(row.get("season", season)) != str(season):
+            continue
         if (row.get("season_type") or "").upper() != kind:
             continue
         team = norm_team(row.get("team"))
-        if team in teams:
-            rows_by_team[team].append(row)
-            filtered_rows.append(row)
+        if team not in teams:
+            continue
+        game_id = (row.get("game_id") or "").strip()
+        if not game_id:
+            game_id = f"{season}:{row.get('week')}:{team}:{norm_team(row.get('opponent_team'))}"
+        row_key = (kind, team, game_id)
+        if row_key in seen_team_games:
+            previous = seen_team_games[row_key]
+            if previous != row:
+                raise RuntimeError(
+                    f"Team stats conflict: {team} {game_id} aparece más de una vez "
+                    "con valores distintos; se cancela la publicación para evitar duplicar yardas."
+                )
+            duplicate_rows += 1
+            continue
+        seen_team_games[row_key] = row
+        rows_by_team[team].append(row)
+        filtered_rows.append(row)
+
+    if duplicate_rows:
+        print(f"{season} {kind}: {duplicate_rows} filas duplicadas idénticas descartadas")
 
     def summed(rows, key):
         return sum(n(row, key) for row in rows)
 
     # The release is game/week-level: sum every row for each team.
     # Defensive allowed totals are the sum of opponents' offensive rows
-    # where opponent_team points to this team.
+    # where opponent_team points to this team. nflverse stores sack_yards_lost
+    # as a signed negative value, so add it to gross passing yards to get net.
     for abbr, own_rows in rows_by_team.items():
         t = teams[abbr]
         t["gp"] = max(t["gp"], len(own_rows))
         t["pass"] = summed(own_rows, "passing_yards")
-        t["passNet"] = t["pass"] - summed(own_rows, "sack_yards_lost")
+        t["passNet"] = t["pass"] + summed(own_rows, "sack_yards_lost")
         t["passAtt"] = summed(own_rows, "attempts")
         t["passComp"] = summed(own_rows, "completions")
         t["passTD"] = summed(own_rows, "passing_tds")
@@ -298,6 +324,16 @@ def build_type(season, kind, schedule_rows, weekly_rows, pbp_summary):
         t["rushTD"] = summed(own_rows, "rushing_tds")
         t["rushAvg"] = t["rush"] / t["rushAtt"] if t["rushAtt"] else 0
         t["receiving"] = summed(own_rows, "receiving_yards")
+        # Passing yards and receiving yards should be close: nflverse documents
+        # the former as official passer yards and the latter as receiver yards
+        # (excluding lateral gains). A >100-yard gap in the live season strongly
+        # indicates duplicated/misaligned source rows, not a real stat difference.
+        if season == CURRENT and abs(t["pass"] - t["receiving"]) > 100:
+            raise RuntimeError(
+                f"{abbr}: passing_yards={t['pass']:.0f} y receiving_yards="
+                f"{t['receiving']:.0f} difieren por más de 100 yd. "
+                "No se publicará un total de pase posiblemente duplicado."
+            )
         t["receptions"] = summed(own_rows, "receptions")
         t["receivingTD"] = summed(own_rows, "receiving_tds")
         t["receivingAvg"] = t["receiving"] / t["receptions"] if t["receptions"] else 0
@@ -331,7 +367,7 @@ def build_type(season, kind, schedule_rows, weekly_rows, pbp_summary):
         ]
         if opp_rows:
             t["passAllowed"] = summed(opp_rows, "passing_yards")
-            t["passAllowedNet"] = t["passAllowed"] - summed(opp_rows, "sack_yards_lost")
+            t["passAllowedNet"] = t["passAllowed"] + summed(opp_rows, "sack_yards_lost")
             t["passAttAllowed"] = summed(opp_rows, "attempts")
             t["passCompAllowed"] = summed(opp_rows, "completions")
             t["passTDAllowed"] = summed(opp_rows, "passing_tds")
@@ -388,9 +424,9 @@ def build_type(season, kind, schedule_rows, weekly_rows, pbp_summary):
         t["yardsAllowed"] = t["passAllowedNet"] + t["rushAllowed"]
         t["pointsPerGame"] = t["points"] / gp if gp else 0
         t["pointsAllowedPerGame"] = t["pointsAllowed"] / gp if gp else 0
-        t["passPerGame"] = t["pass"] / gp if gp else 0
+        t["passPerGame"] = t["passNet"] / gp if gp else 0
         t["passNetPerGame"] = t["passNet"] / gp if gp else 0
-        t["passAllowedPerGame"] = t["passAllowed"] / gp if gp else 0
+        t["passAllowedPerGame"] = t["passAllowedNet"] / gp if gp else 0
         t["rushPerGame"] = t["rush"] / gp if gp else 0
         t["rushAllowedPerGame"] = t["rushAllowed"] / gp if gp else 0
         t["receivingPerGame"] = t["receiving"] / gp if gp else 0
