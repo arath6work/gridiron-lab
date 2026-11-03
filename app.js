@@ -44,8 +44,8 @@ function gameRow(g,compact=false){
  const score = g.status === 'FINAL' && g.awayPts != null && g.homePts != null ? `${g.awayPts} — ${g.homePts}` : '—';
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  return compact
-  ? `<tr><td>W${g.week}</td><td class="team-cell">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score">${score}</td><td class="team-cell">${g.homeName} <span class="muted">(${g.home})</span></td><td><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`
-  : `<tr><td>W${g.week}</td><td class="team-cell">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score">${g.awayPts ?? '—'}</td><td>@</td><td class="score">${g.homePts ?? '—'}</td><td class="team-cell">${g.homeName} <span class="muted">(${g.home})</span></td><td><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
+  ? `<tr class="game-clickable" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td>W${g.week}</td><td class="team-cell">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score">${score}</td><td class="team-cell">${g.homeName} <span class="muted">(${g.home})</span></td><td><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`
+  : `<tr class="game-clickable" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td>W${g.week}</td><td class="team-cell">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score">${g.awayPts ?? '—'}</td><td>@</td><td class="score">${g.homePts ?? '—'}</td><td class="team-cell">${g.homeName} <span class="muted">(${g.home})</span></td><td><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -80,6 +80,50 @@ function renderDefense(){
  const table=$('#defense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="defense" data-sort-key="${key}">${label} ↕</th>`).join('');
  table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell">${t.name} <span class="muted">${t.abbr}</span></td>`+cols.map(([label,key])=>{const v=t[key];let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPctAllowed'?(Number(v)*100).toFixed(1)+'%':(['passAvgAllowed','rushAvgAllowed','receivingAvgAllowed','passerRatingAllowed','yardsAllowedPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame','pointsAllowedPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
+function ensureGameDetailModal(){
+ if($('#game-detail-modal'))return;
+ const style=document.createElement('style');
+ style.textContent=`#game-detail-modal{position:fixed;inset:0;z-index:1000;background:rgba(3,9,14,.78);display:none;align-items:center;justify-content:center;padding:18px}#game-detail-modal.open{display:flex}#game-detail-modal .gd-card{width:min(980px,100%);max-height:90vh;overflow:auto;background:#111d27;color:#eaf0f4;border:1px solid #344654;border-radius:14px;padding:22px;box-shadow:0 20px 70px #0009}#game-detail-modal .gd-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}#game-detail-modal h2{margin:0 0 6px;font-size:clamp(20px,3vw,30px)}#game-detail-modal .gd-sub{color:#9eafbb;font-size:13px}#game-detail-modal button{cursor:pointer}#game-detail-modal .gd-close{border:1px solid #526675;background:#1a2a36;color:#fff;border-radius:8px;padding:8px 12px}#game-detail-modal .gd-score{font-size:24px;font-weight:800;color:#f0b323;margin:14px 0}#game-detail-modal .gd-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}#game-detail-modal .gd-tabs button{border:1px solid #415462;background:#1a2a36;color:#dce5eb;border-radius:8px;padding:8px 12px}#game-detail-modal .gd-tabs button.active{background:#f0b323;color:#101820;border-color:#f0b323}#game-detail-modal .gd-table{width:100%;border-collapse:collapse;font-size:13px}#game-detail-modal .gd-table th,#game-detail-modal .gd-table td{padding:10px 8px;border-bottom:1px solid #2a3a46;text-align:right}#game-detail-modal .gd-table th:first-child,#game-detail-modal .gd-table td:first-child{text-align:left}#game-detail-modal .gd-table th{color:#9eafbb;font-size:11px}#game-detail-modal .gd-team{color:#f0b323;background:none;border:0;padding:0;font:inherit;font-weight:700;text-align:left}#game-detail-modal .gd-history-row{cursor:pointer}#game-detail-modal .gd-history-row:hover,.game-clickable:hover{background:rgba(240,179,35,.08)}.game-clickable{cursor:pointer}.game-clickable:focus{outline:2px solid #f0b323;outline-offset:-2px}`;
+ document.head.appendChild(style);
+ const modal=document.createElement('div');modal.id='game-detail-modal';modal.innerHTML=`<div class="gd-card" role="dialog" aria-modal="true" aria-labelledby="gd-title"><div class="gd-top"><div><h2 id="gd-title">Estadísticas del partido</h2><div class="gd-sub" id="gd-sub"></div></div><button class="gd-close" type="button" data-gd-close>Cerrar ✕</button></div><div id="gd-content"></div></div>`;
+ modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-gd-close]'))closeGameDetail();});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGameDetail();});
+ document.body.appendChild(modal);
+}
+function gdNum(v){return v==null?'—':fmt(v)}
+function gdCompareTable(g){
+ const a=g.awayStats||{},h=g.homeStats||{};
+ const rows=[['Puntos',g.awayPts,g.homePts],['Pase neto (yds)',a.passNet,h.passNet],['Pase bruto (yds)',a.passGross,h.passGross],['Completos / intentos',`${gdNum(a.passComp)} / ${gdNum(a.passAtt)}`,`${gdNum(h.passComp)} / ${gdNum(h.passAtt)}`],['TD por pase',a.passTD,h.passTD],['Intercepciones',a.interceptions,h.interceptions],['Capturas permitidas',a.sacksAllowed,h.sacksAllowed],['Carrera (yds)',a.rush,h.rush],['Acarreos',a.rushAtt,h.rushAtt],['TD por carrera',a.rushTD,h.rushTD],['Recepciones',a.receptions,h.receptions],['Yardas recibidas',a.receiving,h.receiving],['TD por recepción',a.receivingTD,h.receivingTD],['Primeros downs',a.firstDowns,h.firstDowns],['3er down',`${gdNum(a.thirdDownConv)} / ${gdNum(a.thirdDownAtt)}`,`${gdNum(h.thirdDownConv)} / ${gdNum(h.thirdDownAtt)}`],['4to down',`${gdNum(a.fourthDownConv)} / ${gdNum(a.fourthDownAtt)}`,`${gdNum(h.fourthDownConv)} / ${gdNum(h.fourthDownAtt)}`],['Castigos (yds)',`${gdNum(a.penalties)} (${gdNum(a.penaltyYards)})`,`${gdNum(h.penalties)} (${gdNum(h.penaltyYards)})`],['Turnovers',a.turnovers,h.turnovers],['Jugadas',a.plays,h.plays],['EPA',a.epa==null?'—':Number(a.epa).toFixed(1),h.epa==null?'—':Number(h.epa).toFixed(1)]];
+ return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${g.awayName}</button></th><th><button class="gd-team" data-team-history="${g.home}">${g.homeName}</button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
+}
+function openGameDetail(game){
+ ensureGameDetailModal();
+ const modal=$('#game-detail-modal');
+ $('#gd-title').textContent=`${game.awayName} vs. ${game.homeName}`;
+ $('#gd-sub').textContent=`Temporada ${game.season} · Semana ${game.week} · ${game.gameday||''} · ${game.status}`;
+ const hasStats=!!(game.awayStats||game.homeStats);
+ $('#gd-content').innerHTML=`<div class="gd-score">${game.awayPts??'—'} — ${game.homePts??'—'}</div>${hasStats?gdCompareTable(game):'<p class="gd-sub">Las estadísticas detalladas de este partido todavía no están disponibles en la fuente de datos.</p>'}`;
+ modal.classList.add('open');
+}
+function openTeamHistory(abbr){
+ ensureGameDetailModal();
+ const team=teams.find(t=>t.abbr===abbr);if(!team)return;
+ const history=sortGames(games.filter(g=>g.home===abbr||g.away===abbr));
+ $('#gd-title').textContent=`Historial · ${team.name}`;
+ $('#gd-sub').textContent=`${team.w}-${team.l}-${team.t} · ${team.gp} partidos en temporada ${currentSeason()}`;
+ $('#gd-content').innerHTML=`<div class="gd-tabs"><button class="active" type="button">Todos los partidos</button></div><table class="gd-table"><thead><tr><th>Semana</th><th>Rival</th><th>Marcador</th><th>Estado</th></tr></thead><tbody>${history.map(g=>{const home=g.home===abbr,opp=home?g.awayName:g.homeName,forPts=home?g.homePts:g.awayPts,against=home?g.awayPts:g.homePts;return `<tr class="gd-history-row" data-history-game="${g.gameId||''}"><td>W${g.week}</td><td>${home?'vs':'@'} ${opp}</td><td>${forPts??'—'} – ${against??'—'}</td><td>${g.status}</td></tr>`}).join('')||'<tr><td colspan="4">Sin partidos disponibles.</td></tr>'}</tbody></table>`;
+ modal.classList.add('open');
+}
+function closeGameDetail(){const modal=$('#game-detail-modal');if(modal)modal.classList.remove('open');}
+function setupGameDetailInteractions(){
+ document.addEventListener('click',e=>{
+  const teamBtn=e.target.closest('[data-team-history]');if(teamBtn){openTeamHistory(teamBtn.dataset.teamHistory);return;}
+  const historyRow=e.target.closest('[data-history-game]');if(historyRow){const game=games.find(g=>String(g.gameId)===historyRow.dataset.historyGame);if(game)openGameDetail(game);return;}
+  const row=e.target.closest('tr[data-game-id]');if(row){const game=games.find(g=>String(g.gameId)===row.dataset.gameId);if(game)openGameDetail(game);}
+ });
+ document.addEventListener('keydown',e=>{const row=e.target.closest?.('tr[data-game-id]');if(row&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const game=games.find(g=>String(g.gameId)===row.dataset.gameId);if(game)openGameDetail(game);}});
+}
+
 function gameIsFinal(g){return String(g.status||'').toUpperCase()==='FINAL' && g.awayPts!=null && g.homePts!=null;}
 function recordBucket(){return {w:0,l:0,t:0,gp:0,pct:0};}
 function addRecord(bucket, scored, allowed){bucket.gp++; if(scored>allowed)bucket.w++; else if(scored<allowed)bucket.l++; else bucket.t++; bucket.pct=(bucket.w+0.5*bucket.t)/bucket.gp;}
@@ -437,6 +481,7 @@ async function init(){
   $('#games-table').innerHTML='<tr><td colspan="7">No se pudieron cargar los datos.</td></tr>';
  }
 }
+setupGameDetailInteractions();
 init();
 
 document.addEventListener('click', e=>{const th=e.target.closest('th[data-sort-table][data-sort-key]'); if(!th)return; const kind=th.dataset.sortTable,key=th.dataset.sortKey,state=tableSort[kind]; if(!state)return; if(state.key===key)state.dir=state.dir==='desc'?'asc':'desc';else{state.key=key;state.dir=kind==='defense'?'asc':'desc';} renderSortable(kind);});
