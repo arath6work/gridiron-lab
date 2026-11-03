@@ -301,6 +301,39 @@ def build_type(season, kind, schedule_rows, weekly_rows, pbp_summary):
     if duplicate_rows:
         print(f"{season} {kind}: {duplicate_rows} filas duplicadas idénticas descartadas")
 
+    # Preserve the team box-score line for each individual game. This is the
+    # same official weekly team-stat source used for season aggregates above.
+    game_stats_by_id = defaultdict(dict)
+    for row in filtered_rows:
+        gid = (row.get("game_id") or "").strip()
+        team = norm_team(row.get("team"))
+        if not gid or team not in teams:
+            continue
+        gross_pass = n(row, "passing_yards")
+        sack_loss = n(row, "sack_yards_lost")  # nflverse stores this as negative
+        game_stats_by_id[gid][team] = {
+            "passGross": gross_pass, "passNet": gross_pass + sack_loss,
+            "rush": n(row, "rushing_yards"), "receiving": n(row, "receiving_yards"),
+            "passAtt": n(row, "attempts"), "passComp": n(row, "completions"),
+            "passTD": n(row, "passing_tds"), "interceptions": n(row, "passing_interceptions"),
+            "rushAtt": n(row, "carries"), "rushTD": n(row, "rushing_tds"),
+            "receptions": n(row, "receptions"), "receivingTD": n(row, "receiving_tds"),
+            "sacks": n(row, "def_sacks"), "sackYards": n(row, "def_sack_yards"),
+            "sacksAllowed": n(row, "sacks_suffered"), "sackYardsAllowed": sack_loss,
+            "firstDowns": n(row, "first_downs"),
+            "thirdDownAtt": n(row, "third_down_att"),
+            "thirdDownConv": n(row, "third_down_converted"),
+            "fourthDownAtt": n(row, "fourth_down_att"),
+            "fourthDownConv": n(row, "fourth_down_converted"),
+            "penalties": n(row, "penalties"), "penaltyYards": n(row, "penalty_yards"),
+            "turnovers": n(row, "passing_interceptions") + n(row, "rushing_fumbles_lost") + n(row, "receiving_fumbles_lost") + n(row, "sack_fumbles_lost"),
+            "plays": n(row, "plays"), "epa": n(row, "passing_epa") + n(row, "rushing_epa") + n(row, "receiving_epa"),
+        }
+    for game in cooked_games:
+        per_team = game_stats_by_id.get(str(game.get("gameId") or ""), {})
+        game["awayStats"] = per_team.get(game["away"])
+        game["homeStats"] = per_team.get(game["home"])
+
     def summed(rows, key):
         return sum(n(row, key) for row in rows)
 
