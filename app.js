@@ -720,11 +720,6 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   .table-panel{padding:0;min-width:0}
   .table-panel .panel-heading{padding:13px 12px 0}
   .table-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
-  .table-scroll table{max-width:100%}
-  .table-scroll th,.table-scroll td{white-space:normal;overflow-wrap:anywhere;word-break:normal}
-  table{font-size:10px}
-  th{font-size:8px;padding:9px 7px;letter-spacing:.35px}
-  td{font-size:10px;padding:10px 7px}
   .filter-row{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;margin-bottom:12px}
   .filter-row label{display:block;width:100%;min-width:0;font-size:9px}
   .filter-row input,.filter-row select{width:100%;min-width:0;max-width:100%;min-height:42px;padding:10px 11px;margin-top:6px;font-size:13px}
@@ -736,18 +731,6 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   .playoff-disclaimer{font-size:10px;line-height:1.5}
   footer{display:grid;grid-template-columns:1fr;gap:7px;padding:15px 0 5px;margin-top:20px;font-size:8px}
   footer span:last-child{width:auto}
-  #view-overview .table-scroll table{min-width:0;width:100%;table-layout:fixed;white-space:normal}
-  #view-overview .table-scroll th,#view-overview .table-scroll td{padding:8px 5px;font-size:9px;white-space:normal;overflow-wrap:anywhere}
-  #view-ofensiva .table-scroll table,#view-defensiva .table-scroll table{min-width:0;width:100%;table-layout:fixed;white-space:normal}
-  #view-ofensiva .table-scroll th,#view-ofensiva .table-scroll td,
-  #view-defensiva .table-scroll th,#view-defensiva .table-scroll td{padding:8px 4px;font-size:8px;white-space:normal;overflow-wrap:anywhere}
-  #view-ofensiva .table-scroll th:nth-child(1),#view-ofensiva .table-scroll td:nth-child(1),
-  #view-defensiva .table-scroll th:nth-child(1),#view-defensiva .table-scroll td:nth-child(1){width:7%}
-  #view-ofensiva .table-scroll th:nth-child(2),#view-ofensiva .table-scroll td:nth-child(2),
-  #view-defensiva .table-scroll th:nth-child(2),#view-defensiva .table-scroll td:nth-child(2){width:28%;font-size:9px}
-  #view-tabla .table-scroll table{min-width:0;width:100%;table-layout:fixed;white-space:normal}
-  #view-tabla .table-scroll th,#view-tabla .table-scroll td{padding:8px 4px;font-size:9px;white-space:normal;overflow-wrap:anywhere}
-  #view-tabla .table-scroll th:nth-child(2),#view-tabla .table-scroll td:nth-child(2){width:34%}
   /* Perfil individual del equipo */
   #team-page-root{padding:12px 10px 28px!important;overflow-x:hidden!important}
   #team-page-root .tp-wrap{width:100%;max-width:100%;min-width:0}
