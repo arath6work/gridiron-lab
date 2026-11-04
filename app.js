@@ -941,3 +941,33 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
  `;
  document.head.appendChild(style);
 })();
+
+
+/* GRIDIRON LAB V8 — restaurar tarjetas móviles de Partidos sin afectar escritorio */
+(function restoreMobileGamesCardsV8(){
+ if(document.getElementById('gridiron-games-mobile-v8')) return;
+ const style=document.createElement('style');
+ style.id='gridiron-games-mobile-v8';
+ style.textContent=`
+ @media (max-width:640px){
+  #view-partidos .table-panel,
+  #view-partidos .table-scroll{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow:visible!important;box-sizing:border-box!important}
+  #view-partidos table:has(> tbody#games-table){display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;table-layout:auto!important;overflow:visible!important;box-sizing:border-box!important}
+  #view-partidos table:has(> tbody#games-table) thead{display:none!important}
+  #view-partidos table:has(> tbody#games-table) tbody#games-table{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;width:100%!important;max-width:100%!important;min-width:0!important;padding:8px!important;box-sizing:border-box!important}
+  #view-partidos table:has(> tbody#games-table) tbody#games-table tr.game-row-full{display:grid!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 42px!important;grid-template-areas:"week date status" "away away awayScore" "home home homeScore"!important;align-items:center!important;gap:2px 8px!important;margin:0!important;padding:10px 12px!important;background:#fff!important;border:1px solid #d7dee5!important;border-radius:12px!important;box-shadow:0 2px 7px #10203010!important;overflow:hidden!important}
+  #view-partidos table:has(> tbody#games-table) tbody#games-table tr.game-row-full td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;padding:5px 0!important;margin:0!important;border:0!important;text-align:left!important;white-space:normal!important;overflow-wrap:break-word!important;word-break:normal!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-week{grid-area:week!important;font-size:11px!important;font-weight:800!important;color:#687482!important;white-space:nowrap!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-datetime{grid-area:date!important;display:flex!important;justify-content:center!important;gap:5px!important;font-size:11px!important;line-height:1.3!important;color:#687482!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-datetime span{display:inline!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-status{grid-area:status!important;display:block!important;text-align:right!important;font-size:9px!important;font-weight:800!important;white-space:normal!important;overflow-wrap:anywhere!important;color:#687482!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-away{grid-area:away!important;font-size:14px!important;font-weight:750!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-home{grid-area:home!important;font-size:14px!important;font-weight:750!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-away-score{grid-area:awayScore!important;text-align:right!important;font-size:16px!important;font-weight:850!important;white-space:nowrap!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-home-score{grid-area:homeScore!important;text-align:right!important;font-size:16px!important;font-weight:850!important;white-space:nowrap!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-at{display:none!important}
+  #view-partidos tbody#games-table tr.game-row-full .muted{font-size:10px!important}
+ }
+ `;
+ document.head.appendChild(style);
+})();
