@@ -14,9 +14,32 @@ function newestSeason(){
  const seasons=Object.keys(allData?.seasons||{}).sort((a,b)=>Number(b)-Number(a));
  return seasons.find(s=>(allData.seasons[s].games||[]).length>0)||seasons[0]||'';
 }
+function teamStat(team,key){
+ const gp=Number(team?.gp)||0;
+ const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+ if(key==='passNet'){
+  if(finite(team.passNet)) return Number(team.passNet);
+  if(finite(team.pass)) return Number(team.pass)-(Number(team.sackYardsAllowed)||0);
+  return null;
+ }
+ if(key==='passPerGame'){
+  if(finite(team.passPerGame)) return Number(team.passPerGame);
+  const net=teamStat(team,'passNet'); return gp&&net!==null?net/gp:null;
+ }
+ if(key==='passAllowedNet'){
+  if(finite(team.passAllowedNet)) return Number(team.passAllowedNet);
+  if(finite(team.passAllowed)) return Number(team.passAllowed)-(Number(team.sacksMadeYards)||0);
+  return null;
+ }
+ if(key==='passAllowedPerGame'){
+  if(finite(team.passAllowedPerGame)) return Number(team.passAllowedPerGame);
+  const net=teamStat(team,'passAllowedNet'); return gp&&net!==null?net/gp:null;
+ }
+ return team?.[key] ?? null;
+}
 function sortValue(team,key){
  const gp=Number(team.gp)||0;
- const values={totalYards:team.totalYards, yardsPerGame:gp?team.totalYards/gp:0, pass:team.pass, passPerGame:team.passPerGame, rush:team.rush, rushPerGame:team.rushPerGame, receiving:team.receiving, receivingPerGame:team.receivingPerGame, points:team.points, pointsPerGame:gp?team.points/gp:0, yardsAllowed:team.yardsAllowed, yardsAllowedPerGame:gp?team.yardsAllowed/gp:0, passAllowed:team.passAllowed, passAllowedPerGame:team.passAllowedPerGame, rushAllowed:team.rushAllowed, rushAllowedPerGame:team.rushAllowedPerGame, receivingAllowed:team.receivingAllowed, receivingAllowedPerGame:team.receivingAllowedPerGame, pointsAllowed:team.pointsAllowed, pointsAllowedPerGame:gp?team.pointsAllowed/gp:0, sacks:team.sacks, sacksAllowed:team.sacksAllowed, firstDowns:team.firstDowns, firstDownsAllowed:team.firstDownsAllowed, thirdDownConv:team.thirdDownConv, thirdDownAtt:team.thirdDownAtt, thirdDownRate:team.thirdDownRate, thirdDownConvAllowed:team.thirdDownConvAllowed, thirdDownAttAllowed:team.thirdDownAttAllowed, thirdDownRateAllowed:team.thirdDownRateAllowed, gp:team.gp, pct:pct(team), w:team.w, l:team.l, t:team.t, diff:team.diff, div:team.div, name:team.name, local:team.standingRecords?.local?.pct||0, visitor:team.standingRecords?.visitor?.pct||0, division:team.standingRecords?.division?.pct||0, conference:team.standingRecords?.conference?.pct||0, interconference:team.standingRecords?.interconference?.pct||0};
+ const values={totalYards:team.totalYards, yardsPerGame:gp?team.totalYards/gp:0, pass:team.pass, passNet:teamStat(team,'passNet'), passPerGame:teamStat(team,'passPerGame'), rush:team.rush, rushPerGame:team.rushPerGame, receiving:team.receiving, receivingPerGame:team.receivingPerGame, points:team.points, pointsPerGame:gp?team.points/gp:0, yardsAllowed:team.yardsAllowed, yardsAllowedPerGame:gp?team.yardsAllowed/gp:0, passAllowed:team.passAllowed, passAllowedNet:teamStat(team,'passAllowedNet'), passAllowedPerGame:teamStat(team,'passAllowedPerGame'), rushAllowed:team.rushAllowed, rushAllowedPerGame:team.rushAllowedPerGame, receivingAllowed:team.receivingAllowed, receivingAllowedPerGame:team.receivingAllowedPerGame, pointsAllowed:team.pointsAllowed, pointsAllowedPerGame:gp?team.pointsAllowed/gp:0, sacks:team.sacks, sacksAllowed:team.sacksAllowed, firstDowns:team.firstDowns, firstDownsAllowed:team.firstDownsAllowed, thirdDownConv:team.thirdDownConv, thirdDownAtt:team.thirdDownAtt, thirdDownRate:team.thirdDownRate, thirdDownConvAllowed:team.thirdDownConvAllowed, thirdDownAttAllowed:team.thirdDownAttAllowed, thirdDownRateAllowed:team.thirdDownRateAllowed, gp:team.gp, pct:pct(team), w:team.w, l:team.l, t:team.t, diff:team.diff, div:team.div, name:team.name, local:team.standingRecords?.local?.pct||0, visitor:team.standingRecords?.visitor?.pct||0, division:team.standingRecords?.division?.pct||0, conference:team.standingRecords?.conference?.pct||0, interconference:team.standingRecords?.interconference?.pct||0};
  return values[key]??team[key]??0;
 }
 function sortedTeams(list,kind){const s=tableSort[kind];return [...list].sort((a,b)=>{const av=sortValue(a,s.key),bv=sortValue(b,s.key);const cmp=typeof av==='string'?String(av).localeCompare(String(bv)):((Number(av)||0)-(Number(bv)||0));return (s.dir==='asc'?cmp:-cmp)||String(a.name).localeCompare(String(b.name));});}
@@ -93,12 +116,13 @@ function gameLocalDateTime(g){
  return {date:localDate,time:new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(instant)};
 }
 function gameRow(g,compact=false){
+ const mobileSchedule=window.matchMedia('(max-width:700px)').matches;
  const score = g.status === 'FINAL' && g.awayPts != null && g.homePts != null ? `${g.awayPts} — ${g.homePts}` : '—';
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  const localDateTime=gameLocalDateTime(g);
  return compact
   ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
-  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">${mobileSchedule ? "" : "@"}</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${mobileSchedule ? "" : status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -122,7 +146,7 @@ function renderOffense(){
  };
  const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'offense');
  const table=$('#offense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="offense" data-sort-key="${key}">${label} ↕</th>`).join('');
- table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{const v=t[key];let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPct'?(Number(v)*100).toFixed(1)+'%':(['passAvg','rushAvg','receivingAvg','passerRating','yardsPerGame','passPerGame','rushPerGame','receivingPerGame','pointsPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{const v=teamStat(t,key);let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPct'?(Number(v)*100).toFixed(1)+'%':(['passAvg','rushAvg','receivingAvg','passerRating','yardsPerGame','passPerGame','rushPerGame','receivingPerGame','pointsPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function renderDefense(){
  const q=($('#defense-search')?.value||'').toLowerCase(), mode=$('#defense-mode')?.value||'total';
@@ -135,7 +159,7 @@ function renderDefense(){
  };
  const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'defense');
  const table=$('#defense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="defense" data-sort-key="${key}">${label} ↕</th>`).join('');
- table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{const v=t[key];let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPctAllowed'?(Number(v)*100).toFixed(1)+'%':(['passAvgAllowed','rushAvgAllowed','receivingAvgAllowed','passerRatingAllowed','yardsAllowedPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame','pointsAllowedPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{const v=teamStat(t,key);let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPctAllowed'?(Number(v)*100).toFixed(1)+'%':(['passAvgAllowed','rushAvgAllowed','receivingAvgAllowed','passerRatingAllowed','yardsAllowedPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame','pointsAllowedPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function ensureGameDetailModal(){
  if($('#game-detail-modal'))return;
@@ -209,7 +233,7 @@ function ensureGameDetailModal(){
 function gdNum(v){return v==null?'—':fmt(v)}
 function gdCompareTable(g){
  const a=g.awayStats||{},h=g.homeStats||{};
- const rows=[['Puntos',g.awayPts,g.homePts],['Pase neto (yds)',a.passNet,h.passNet],['Pase bruto (yds)',a.passGross,h.passGross],['Completos / intentos',`${gdNum(a.passComp)} / ${gdNum(a.passAtt)}`,`${gdNum(h.passComp)} / ${gdNum(h.passAtt)}`],['TD por pase',a.passTD,h.passTD],['Intercepciones',a.interceptions,h.interceptions],['Capturas permitidas',a.sacksAllowed,h.sacksAllowed],['Carrera (yds)',a.rush,h.rush],['Acarreos',a.rushAtt,h.rushAtt],['TD por carrera',a.rushTD,h.rushTD],['Recepciones',a.receptions,h.receptions],['Yardas recibidas',a.receiving,h.receiving],['TD por recepción',a.receivingTD,h.receivingTD],['Primeros downs',a.firstDowns,h.firstDowns],['3er down',`${gdNum(a.thirdDownConv)} / ${gdNum(a.thirdDownAtt)}`,`${gdNum(h.thirdDownConv)} / ${gdNum(h.thirdDownAtt)}`],['4to down',`${gdNum(a.fourthDownConv)} / ${gdNum(a.fourthDownAtt)}`,`${gdNum(h.fourthDownConv)} / ${gdNum(h.fourthDownAtt)}`],['Castigos (yds)',`${gdNum(a.penalties)} (${gdNum(a.penaltyYards)})`,`${gdNum(h.penalties)} (${gdNum(h.penaltyYards)})`],['Turnovers',a.turnovers,h.turnovers],['Jugadas',a.plays,h.plays],['EPA',a.epa==null?'—':Number(a.epa).toFixed(1),h.epa==null?'—':Number(h.epa).toFixed(1)]];
+ const rows=[['Puntos',g.awayPts,g.homePts],['Pase neto (yds)',teamStat(a,'passNet'),teamStat(h,'passNet')],['Pase bruto (yds)',a.pass??a.passGross,h.pass??h.passGross],['Completos / intentos',`${gdNum(a.passComp)} / ${gdNum(a.passAtt)}`,`${gdNum(h.passComp)} / ${gdNum(h.passAtt)}`],['TD por pase',a.passTD,h.passTD],['Intercepciones',a.interceptions,h.interceptions],['Capturas permitidas',a.sacksAllowed,h.sacksAllowed],['Carrera (yds)',a.rush,h.rush],['Acarreos',a.rushAtt,h.rushAtt],['TD por carrera',a.rushTD,h.rushTD],['Recepciones',a.receptions,h.receptions],['Yardas recibidas',a.receiving,h.receiving],['TD por recepción',a.receivingTD,h.receivingTD],['Primeros downs',a.firstDowns,h.firstDowns],['3er down',`${gdNum(a.thirdDownConv)} / ${gdNum(a.thirdDownAtt)}`,`${gdNum(h.thirdDownConv)} / ${gdNum(h.thirdDownAtt)}`],['4to down',`${gdNum(a.fourthDownConv)} / ${gdNum(a.fourthDownAtt)}`,`${gdNum(h.fourthDownConv)} / ${gdNum(h.fourthDownAtt)}`],['Castigos (yds)',`${gdNum(a.penalties)} (${gdNum(a.penaltyYards)})`,`${gdNum(h.penalties)} (${gdNum(h.penaltyYards)})`],['Turnovers',a.turnovers,h.turnovers],['Jugadas',a.plays,h.plays],['EPA',a.epa==null?'—':Number(a.epa).toFixed(1),h.epa==null?'—':Number(h.epa).toFixed(1)]];
  return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${g.awayName}</button></th><th><button class="gd-team" data-team-history="${g.home}">${g.homeName}</button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
 }
 function openGameDetail(game){
@@ -973,26 +997,26 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
 })();
 
 
-/* GRIDIRON LAB V10 — tarjetas móviles y navegación fija, sin modificar escritorio. */
-(function mobilePartidosV10(){
+/* GRIDIRON LAB V11 — móvil: navegación fija debajo del encabezado y tarjetas limpias. */
+(function mobilePartidosV11(){
  const style=document.createElement('style');
- style.id='gridiron-mobile-v10';
+ style.id='gridiron-mobile-v11';
  style.textContent=`
  @media(max-width:700px){
-  /* La barra permanece en pantalla al desplazarse; no depende de sticky. */
-  .shell{padding-top:var(--gl-nav-height,58px)!important}
-  .shell>.sidebar{position:fixed!important;top:0!important;left:0!important;right:0!important;width:100%!important;max-width:100vw!important;z-index:10000!important;box-sizing:border-box!important;display:flex!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;gap:5px!important;padding:7px 10px!important;background:#fff!important;border:0!important;border-bottom:1px solid #d8dee5!important;box-shadow:0 3px 9px #14233418!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important}
+  body{scroll-padding-top:calc(var(--gl-topbar-height,82px) + var(--gl-nav-height,52px))}
+  .topbar{position:sticky!important;top:0!important;z-index:10001!important;background:#fff!important}
+  .shell{padding-top:var(--gl-nav-height,52px)!important}
+  .shell>.sidebar{position:fixed!important;top:var(--gl-topbar-height,82px)!important;left:0!important;right:0!important;width:100%!important;max-width:100vw!important;z-index:10000!important;box-sizing:border-box!important;display:flex!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;gap:5px!important;padding:7px 10px!important;background:#fff!important;border:0!important;border-bottom:1px solid #d8dee5!important;box-shadow:0 3px 9px #14233418!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important}
   .shell>.sidebar::-webkit-scrollbar{display:none!important}
   .shell>.sidebar .nav-item{flex:0 0 auto!important;background:transparent!important;color:#596273!important;border:0!important;border-bottom:3px solid transparent!important;border-radius:4px 4px 0 0!important;box-shadow:none!important;padding:10px 12px 8px!important;font-size:12px!important;font-weight:700!important}
   .shell>.sidebar .nav-item span{color:inherit!important}
   .shell>.sidebar .nav-item.active{background:#fff!important;color:#d9272e!important;border-bottom-color:#d9272e!important;box-shadow:none!important}
-  /* Cada tarjeta ocupa el ancho real del móvil, sin scroll horizontal. */
   #view-partidos .table-panel,#view-partidos .table-scroll{width:100%!important;max-width:100%!important;min-width:0!important;overflow:visible!important}
   #view-partidos table:has(>tbody#games-table){display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;table-layout:auto!important;overflow:visible!important}
   #view-partidos table:has(>tbody#games-table)>thead{display:none!important}
   #view-partidos table:has(>tbody#games-table)>tbody#games-table{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;width:100%!important;max-width:100%!important;min-width:0!important;padding:8px!important;box-sizing:border-box!important}
-  #view-partidos tbody#games-table tr.game-row-full{display:grid!important;grid-template-columns:minmax(0,1fr) 40px!important;grid-template-areas:"week date" "away awayScore" "home homeScore"!important;gap:8px 9px!important;align-items:center!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:13px!important;background:#fff!important;border:1px solid #d7dee5!important;border-radius:12px!important;box-shadow:0 2px 7px #10203010!important;overflow:hidden!important}
-  #view-partidos tbody#games-table tr.game-row-full>td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important;padding:0!important;border:0!important;white-space:normal!important;overflow-wrap:break-word!important;text-align:left!important}
+  #view-partidos tbody#games-table tr.game-row-full{display:grid!important;grid-template-columns:minmax(0,1fr) 42px!important;grid-template-areas:"week date" "away awayScore" "home homeScore"!important;gap:8px 9px!important;align-items:center!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:13px!important;background:#fff!important;border:1px solid #d7dee5!important;border-radius:12px!important;box-shadow:0 2px 7px #10203010!important;overflow:hidden!important}
+  #view-partidos tbody#games-table tr.game-row-full>td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important;padding:0!important;border:0!important;white-space:normal!important;overflow-wrap:anywhere!important;text-align:left!important}
   #view-partidos tbody#games-table tr.game-row-full>.game-week{grid-area:week!important;font-size:11px!important;font-weight:800!important;color:#697482!important}
   #view-partidos tbody#games-table tr.game-row-full>.game-datetime{grid-area:date!important;justify-self:end!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:3px 6px!important;text-align:right!important;font-size:11px!important;line-height:1.3!important;color:#667381!important;font-variant-numeric:tabular-nums!important}
   #view-partidos tbody#games-table tr.game-row-full>.game-datetime span{display:inline!important}
@@ -1001,19 +1025,30 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   #view-partidos tbody#games-table tr.game-row-full>.game-home{grid-area:home!important;font-size:14px!important;font-weight:750!important;line-height:1.35!important}
   #view-partidos tbody#games-table tr.game-row-full>.game-away-score{grid-area:awayScore!important;text-align:right!important;font-size:17px!important;font-weight:800!important}
   #view-partidos tbody#games-table tr.game-row-full>.game-home-score{grid-area:homeScore!important;text-align:right!important;font-size:17px!important;font-weight:800!important}
-  #view-partidos tbody#games-table tr.game-row-full>.game-at,#view-partidos tbody#games-table tr.game-row-full>.game-status{display:none!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-at,
+  #view-partidos tbody#games-table tr.game-row-full>.game-status{display:none!important}
   #view-partidos tbody#games-table tr.game-row-full .muted{font-size:10px!important}
  }
  `;
  document.head.appendChild(style);
  const sidebar=document.querySelector('.shell>.sidebar');
- if(!sidebar)return;
- function syncNavHeight(){
+ const topbar=document.querySelector('.topbar');
+ if(!sidebar||!topbar)return;
+ function syncFixedHeader(){
   if(window.matchMedia('(max-width:700px)').matches){
-   document.documentElement.style.setProperty('--gl-nav-height',Math.ceil(sidebar.getBoundingClientRect().height)+'px');
-  }else document.documentElement.style.removeProperty('--gl-nav-height');
+   const topHeight=Math.ceil(topbar.getBoundingClientRect().height);
+   const navHeight=Math.ceil(sidebar.getBoundingClientRect().height);
+   document.documentElement.style.setProperty('--gl-topbar-height',topHeight+'px');
+   document.documentElement.style.setProperty('--gl-nav-height',navHeight+'px');
+  }else{
+   document.documentElement.style.removeProperty('--gl-topbar-height');
+   document.documentElement.style.removeProperty('--gl-nav-height');
+  }
  }
- syncNavHeight();
- window.addEventListener('resize',syncNavHeight,{passive:true});
- if(typeof ResizeObserver!=='undefined')new ResizeObserver(syncNavHeight).observe(sidebar);
+ syncFixedHeader();
+ window.addEventListener('resize',()=>{syncFixedHeader();renderGames();},{passive:true});
+ window.addEventListener('orientationchange',()=>{syncFixedHeader();renderGames();},{passive:true});
+ if(typeof ResizeObserver!=='undefined'){
+  const ro=new ResizeObserver(syncFixedHeader);ro.observe(sidebar);ro.observe(topbar);
+ }
 })();
