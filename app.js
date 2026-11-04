@@ -19,7 +19,8 @@ function teamStat(team,key){
  const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
  if(key==='passNet'){
   if(finite(team.passNet)) return Number(team.passNet);
-  if(finite(team.pass)) return Number(team.pass)-(Number(team.sackYardsAllowed)||0);
+  // No asumir que las yardas brutas son netas si el JSON no trae la pérdida por sacks.
+  if(finite(team.pass) && finite(team.sackYardsAllowed)) return Number(team.pass)-Number(team.sackYardsAllowed);
   return null;
  }
  if(key==='passPerGame'){
@@ -28,7 +29,7 @@ function teamStat(team,key){
  }
  if(key==='passAllowedNet'){
   if(finite(team.passAllowedNet)) return Number(team.passAllowedNet);
-  if(finite(team.passAllowed)) return Number(team.passAllowed)-(Number(team.sacksMadeYards)||0);
+  if(finite(team.passAllowed) && finite(team.sacksMadeYards)) return Number(team.passAllowed)-Number(team.sacksMadeYards);
   return null;
  }
  if(key==='passAllowedPerGame'){
