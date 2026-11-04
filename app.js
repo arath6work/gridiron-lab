@@ -98,7 +98,7 @@ function gameRow(g,compact=false){
  const localDateTime=gameLocalDateTime(g);
  return compact
   ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
-  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -967,6 +967,68 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   #view-partidos tbody#games-table tr.game-row-full .game-home-score{grid-area:homeScore!important;text-align:right!important;font-size:16px!important;font-weight:850!important;white-space:nowrap!important}
   #view-partidos tbody#games-table tr.game-row-full .game-at{display:none!important}
   #view-partidos tbody#games-table tr.game-row-full .muted{font-size:10px!important}
+ }
+ `;
+ document.head.appendChild(style);
+})();
+
+
+/* GRIDIRON LAB V9 — acabado móvil de tarjetas y navegación fija */
+(function mobileCardsAndStickyNavV9(){
+ if(document.getElementById('gridiron-mobile-v9')) return;
+ const style=document.createElement('style');
+ style.id='gridiron-mobile-v9';
+ style.textContent=`
+ @media (max-width:700px){
+  /* Navegación móvil: misma paleta clara de escritorio y fija al desplazarse */
+  .sidebar{
+   position:sticky!important;top:0!important;z-index:1000!important;
+   align-self:stretch!important;background:#fff!important;
+   border-right:0!important;border-bottom:1px solid #d9dfe6!important;
+   box-shadow:0 3px 10px rgba(20,30,40,.08)!important;
+   padding:7px 9px!important;gap:5px!important;
+   scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;
+  }
+  .sidebar::-webkit-scrollbar{display:none!important}
+  .sidebar .nav-item{
+   color:#596273!important;background:transparent!important;
+   border:0!important;border-bottom:3px solid transparent!important;
+   border-radius:6px 6px 0 0!important;
+   padding:10px 12px 8px!important;font-weight:700!important;
+  }
+  .sidebar .nav-item span{color:inherit!important}
+  .sidebar .nav-item.active{
+   color:#d9272e!important;background:#fff!important;
+   border-bottom:3px solid #d9272e!important;
+   box-shadow:none!important;
+  }
+  /* Tarjetas: fecha/hora arriba a la derecha; solo FINAL cuando ya terminó */
+  #view-partidos tbody#games-table tr.game-row-full{
+   grid-template-columns:minmax(0,1fr) 42px!important;
+   grid-template-areas:"week date" "away awayScore" "home homeScore"!important;
+   gap:3px 8px!important;padding:11px 13px!important;
+  }
+  #view-partidos tbody#games-table tr.game-row-full .game-week{
+   grid-area:week!important;justify-self:start!important;align-self:center!important;
+  }
+  #view-partidos tbody#games-table tr.game-row-full .game-datetime{
+   grid-area:date!important;justify-self:end!important;align-self:center!important;
+   display:flex!important;flex-direction:row!important;justify-content:flex-end!important;
+   align-items:center!important;gap:5px!important;text-align:right!important;
+   white-space:nowrap!important;font-size:11px!important;line-height:1.3!important;
+   color:#687482!important;font-variant-numeric:tabular-nums!important;
+  }
+  #view-partidos tbody#games-table tr.game-row-full .game-datetime span{display:inline!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-datetime .game-mobile-final{
+   color:#d9272e!important;font-weight:900!important;letter-spacing:.45px!important;
+   margin-left:3px!important;
+  }
+  #view-partidos tbody#games-table tr.game-row-full .game-status,
+  #view-partidos tbody#games-table tr.game-row-full .game-at{display:none!important}
+  #view-partidos tbody#games-table tr.game-row-full .game-away,
+  #view-partidos tbody#games-table tr.game-row-full .game-home{
+   font-size:14px!important;line-height:1.3!important;
+  }
  }
  `;
  document.head.appendChild(style);
