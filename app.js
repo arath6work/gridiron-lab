@@ -887,64 +887,35 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
  `;
  document.head.appendChild(s);
 })();
-
-/* GRIDIRON LAB V6 — corrección definitiva de Partidos y ficha */
-(function fixGamesLayoutV6(){
- if(document.getElementById('gridiron-games-v6')) return;
+/* GRIDIRON LAB V6 — distribución real de las 8 columnas en escritorio */
+(function fixDesktopGamesWidthV6(){
+ if(document.getElementById('gridiron-games-desktop-v6')) return;
  const style=document.createElement('style');
- style.id='gridiron-games-v6';
+ style.id='gridiron-games-desktop-v6';
  style.textContent=`
- /* Escritorio: las ocho columnas reales del calendario */
- @media(min-width:641px){
-  #view-partidos .table-scroll:has(#games-table){overflow-x:auto!important}
-  #view-partidos table:has(#games-table){width:100%!important;min-width:0!important;table-layout:fixed!important}
-  #games-table{display:table!important;width:100%!important}
-  #games-table tr.game-row-full{display:table-row!important}
-  #games-table tr.game-row-full td{display:table-cell!important;padding:12px 7px!important;vertical-align:middle;text-align:center!important}
-  #games-table tr.game-row-full td:nth-child(1){width:6%}
-  #games-table tr.game-row-full td:nth-child(2){width:13%}
-  #games-table tr.game-row-full td:nth-child(3),#games-table tr.game-row-full td:nth-child(7){width:19%;white-space:normal;overflow-wrap:anywhere}
-  #games-table tr.game-row-full td:nth-child(4),#games-table tr.game-row-full td:nth-child(6){width:7%}
-  #games-table tr.game-row-full td:nth-child(5){width:4%}
-  #games-table tr.game-row-full td:nth-child(8){width:25%;white-space:normal}
-  #games-table .game-datetime span{display:block}
- }
- /* Móvil: cada partido es una tarjeta completa, sin columnas descartadas */
- @media(max-width:640px){
-  #view-partidos .table-scroll:has(#games-table){overflow:visible!important;width:100%!important}
-  #view-partidos table:has(#games-table){display:block!important;width:100%!important;min-width:0!important;table-layout:auto!important}
-  #view-partidos table:has(#games-table)>thead{display:none!important}
-  #games-table{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:9px!important;width:100%!important;min-width:0!important;padding:8px!important}
-  #games-table tr.game-row-full{display:grid!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;grid-template-columns:minmax(0,1fr) 42px!important;grid-template-areas:"week status" "date date" "away awayScore" "home homeScore"!important;align-items:center;gap:0 9px;padding:10px 12px!important;margin:0!important;background:#fff!important;border:1px solid #d7dee5!important;border-radius:11px;box-shadow:0 2px 7px #10203010}
-  #games-table tr.game-row-full td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;padding:5px 0!important;border:0!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere!important}
-  #games-table tr.game-row-full .game-week{grid-area:week;font-size:10px;font-weight:800;color:#687482}
-  #games-table tr.game-row-full .game-status{grid-area:status;justify-self:end;text-align:right!important;font-size:9px;font-weight:800;white-space:normal!important;color:#596371}
-  #games-table tr.game-row-full .game-datetime{grid-area:date;font-size:10px;color:#687482;line-height:1.35}
-  #games-table tr.game-row-full .game-datetime span{display:inline}
-  #games-table tr.game-row-full .game-datetime span+span:before{content:" · "}
-  #games-table tr.game-row-full .game-away{grid-area:away;font-size:13px;font-weight:750;color:#20242a}
-  #games-table tr.game-row-full .game-home{grid-area:home;font-size:13px;font-weight:750;color:#20242a}
-  #games-table tr.game-row-full .game-away-score{grid-area:awayScore;text-align:right!important;font-size:16px;font-weight:850;color:#20242a}
-  #games-table tr.game-row-full .game-home-score{grid-area:homeScore;text-align:right!important;font-size:16px;font-weight:850;color:#20242a}
-  #games-table tr.game-row-full .game-at{display:none!important}
-  #games-table tr.game-row-full .muted{font-size:10px}
- }
- /* Ficha: tres columnas estables y legibles en móvil */
- #game-detail-modal .gd-card{min-width:0;}
- #game-detail-modal .gd-table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse}
- #game-detail-modal .gd-table th,#game-detail-modal .gd-table td{white-space:normal!important;overflow-wrap:anywhere;word-break:normal}
- @media(max-width:640px){
-  #game-detail-modal{padding:7px!important}
-  #game-detail-modal .gd-card{width:100%!important;max-width:100%!important;max-height:94dvh!important;padding:12px 9px!important;overflow:auto!important}
-  #game-detail-modal .gd-top{gap:8px}
-  #game-detail-modal .gd-top>div{min-width:0;flex:1}
-  #game-detail-modal h2{font-size:clamp(17px,5vw,22px);line-height:1.2;overflow-wrap:anywhere}
-  #game-detail-modal .gd-close{flex:0 0 auto;padding:7px 8px;font-size:10px}
-  #game-detail-modal .gd-table{font-size:10px!important}
-  #game-detail-modal .gd-table th,#game-detail-modal .gd-table td{padding:8px 3px!important}
-  #game-detail-modal .gd-table th:first-child,#game-detail-modal .gd-table td:first-child{width:38%!important;font-size:9px}
-  #game-detail-modal .gd-table th:nth-child(2),#game-detail-modal .gd-table td:nth-child(2),#game-detail-modal .gd-table th:nth-child(3),#game-detail-modal .gd-table td:nth-child(3){width:31%!important;text-align:center!important;font-variant-numeric:tabular-nums}
-  #game-detail-modal .gd-team{display:block;width:100%;font-size:9px;line-height:1.2;white-space:normal;overflow-wrap:anywhere;text-align:center}
+ @media (min-width:641px){
+  #view-partidos .table-panel,
+  #view-partidos .table-scroll{width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important}
+  #view-partidos .table-scroll{overflow-x:hidden!important}
+  #view-partidos table:has(#games-table){display:table!important;width:100%!important;min-width:0!important;max-width:none!important;table-layout:fixed!important;border-collapse:collapse!important;margin:0!important}
+  #view-partidos table:has(#games-table) thead{display:table-header-group!important;width:100%!important}
+  #view-partidos table:has(#games-table) tbody#games-table{display:table-row-group!important;width:100%!important;min-width:0!important}
+  #view-partidos table:has(#games-table) tbody#games-table tr.game-row-full{display:table-row!important;width:100%!important;min-width:0!important;max-width:none!important}
+  #view-partidos table:has(#games-table) thead th,
+  #view-partidos table:has(#games-table) tbody#games-table tr.game-row-full td{display:table-cell!important;box-sizing:border-box!important;text-align:center!important;vertical-align:middle!important;padding:13px 8px!important;white-space:normal!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(1),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(1){width:6%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(2),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(2){width:12%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(3),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(3){width:22%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(4),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(4){width:7%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(5),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(5){width:4%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(6),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(6){width:7%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(7),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(7){width:22%!important}
+  #view-partidos table:has(#games-table) thead th:nth-child(8),#view-partidos table:has(#games-table) tbody#games-table td:nth-child(8){width:20%!important}
+  #view-partidos table:has(#games-table) tbody#games-table td.game-away,
+  #view-partidos table:has(#games-table) tbody#games-table td.game-home{font-weight:700;overflow-wrap:break-word;word-break:normal}
+  #view-partidos table:has(#games-table) tbody#games-table td.game-datetime{font-variant-numeric:tabular-nums;line-height:1.35}
+  #view-partidos table:has(#games-table) tbody#games-table td.game-datetime span{display:block}
+  #view-partidos table:has(#games-table) tbody#games-table td.game-status{white-space:nowrap!important}
  }
  `;
  document.head.appendChild(style);
