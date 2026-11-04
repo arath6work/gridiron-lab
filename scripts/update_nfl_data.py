@@ -140,6 +140,87 @@ def main():
                 print(f'No se pudo leer {url}: {error}')
                 pbp = []
 
+        # Estadísticas oficiales por equipo y partido (una fila por team/game).
+        # Se usan para poblar awayStats/homeStats en cada ficha sin alterar
+        # los acumulados de temporada que ya están validados con PBP.
+        weekly_rows = []
+        weekly_stats_loaded = False
+        weekly_url = f'{BASE}/stats_team/stats_team_week_{season}.csv'
+        try:
+            weekly_rows = read_csv(weekly_url)
+            weekly_stats_loaded = True
+            print(f'{season}: {len(weekly_rows)} filas de estadísticas semanales')
+        except Exception as error:
+            print(f'{season}: no se pudieron cargar estadísticas por partido: {error}')
+
+        game_stats_by_id = {}
+        seen_team_games = {}
+        for row in weekly_rows:
+            if str(row.get('season', '')) != str(season):
+                continue
+            game_type = (row.get('season_type') or 'REG').upper()
+            team = row.get('team', '')
+            game_id = (row.get('game_id') or '').strip()
+            if not game_id or not team:
+                continue
+            key = (game_type, team, game_id)
+            if key in seen_team_games:
+                if seen_team_games[key] != row:
+                    raise RuntimeError(
+                        f'{season}: estadísticas duplicadas y contradictorias '
+                        f'para {team} en {game_id}; se cancela la publicación.'
+                    )
+                continue
+            seen_team_games[key] = row
+
+            gross_pass = num(row, 'passing_yards')
+            sack_loss = num(row, 'sack_yards_lost')  # nflverse lo guarda negativo
+            game_stats_by_id.setdefault((game_type, game_id), {})[team] = {
+                'passGross': gross_pass,
+                'passNet': gross_pass + sack_loss,
+                'rush': num(row, 'rushing_yards'),
+                'receiving': num(row, 'receiving_yards'),
+                'passAtt': num(row, 'attempts'),
+                'passComp': num(row, 'completions'),
+                'passTD': num(row, 'passing_tds'),
+                'interceptions': num(row, 'passing_interceptions'),
+                'rushAtt': num(row, 'carries'),
+                'rushTD': num(row, 'rushing_tds'),
+                'receptions': num(row, 'receptions'),
+                'receivingTD': num(row, 'receiving_tds'),
+                'sacks': num(row, 'def_sacks'),
+                'sackYards': num(row, 'def_sack_yards'),
+                'sacksAllowed': num(row, 'sacks_suffered'),
+                'sackYardsAllowed': sack_loss,
+                'firstDowns': num(row, 'first_downs'),
+                'thirdDownAtt': num(row, 'third_down_att'),
+                'thirdDownConv': num(row, 'third_down_converted'),
+                'fourthDownAtt': num(row, 'fourth_down_att'),
+                'fourthDownConv': num(row, 'fourth_down_converted'),
+                'penalties': num(row, 'penalties'),
+                'penaltyYards': num(row, 'penalty_yards'),
+                'turnovers': (
+                    num(row, 'passing_interceptions')
+                    + num(row, 'rushing_fumbles_lost')
+                    + num(row, 'receiving_fumbles_lost')
+                    + num(row, 'sack_fumbles_lost')
+                ),
+                'plays': num(row, 'plays'),
+                'epa': (
+                    num(row, 'passing_epa')
+                    + num(row, 'rushing_epa')
+                    + num(row, 'receiving_epa')
+                ),
+            }
+
+        for game in cooked_games:
+            per_team = game_stats_by_id.get(
+                ((game.get('gameType') or 'REG').upper(), str(game.get('gameId') or '')),
+                {}
+            )
+            game['awayStats'] = per_team.get(game['away'])
+            game['homeStats'] = per_team.get(game['home'])
+
         for play in pbp:
             if str(play.get('season', '')) != str(season):
                 continue
@@ -216,6 +297,7 @@ def main():
                 game['week'], game['gameday'], game.get('gametime', ''), game['away']
             )),
             'advancedAvailable': pbp_loaded,
+            'gameStatsAvailable': weekly_stats_loaded,
         }
         print(
             f'{season}: {len(cooked_games)} partidos; {len(teams)} equipos reales; '
