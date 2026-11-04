@@ -973,63 +973,47 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
 })();
 
 
-/* GRIDIRON LAB V9 — acabado móvil de tarjetas y navegación fija */
-(function mobileCardsAndStickyNavV9(){
- if(document.getElementById('gridiron-mobile-v9')) return;
+/* GRIDIRON LAB V10 — tarjetas móviles y navegación fija, sin modificar escritorio. */
+(function mobilePartidosV10(){
  const style=document.createElement('style');
- style.id='gridiron-mobile-v9';
+ style.id='gridiron-mobile-v10';
  style.textContent=`
- @media (max-width:700px){
-  /* Navegación móvil: misma paleta clara de escritorio y fija al desplazarse */
-  .sidebar{
-   position:sticky!important;top:0!important;z-index:1000!important;
-   align-self:stretch!important;background:#fff!important;
-   border-right:0!important;border-bottom:1px solid #d9dfe6!important;
-   box-shadow:0 3px 10px rgba(20,30,40,.08)!important;
-   padding:7px 9px!important;gap:5px!important;
-   scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;
-  }
-  .sidebar::-webkit-scrollbar{display:none!important}
-  .sidebar .nav-item{
-   color:#596273!important;background:transparent!important;
-   border:0!important;border-bottom:3px solid transparent!important;
-   border-radius:6px 6px 0 0!important;
-   padding:10px 12px 8px!important;font-weight:700!important;
-  }
-  .sidebar .nav-item span{color:inherit!important}
-  .sidebar .nav-item.active{
-   color:#d9272e!important;background:#fff!important;
-   border-bottom:3px solid #d9272e!important;
-   box-shadow:none!important;
-  }
-  /* Tarjetas: fecha/hora arriba a la derecha; solo FINAL cuando ya terminó */
-  #view-partidos tbody#games-table tr.game-row-full{
-   grid-template-columns:minmax(0,1fr) 42px!important;
-   grid-template-areas:"week date" "away awayScore" "home homeScore"!important;
-   gap:3px 8px!important;padding:11px 13px!important;
-  }
-  #view-partidos tbody#games-table tr.game-row-full .game-week{
-   grid-area:week!important;justify-self:start!important;align-self:center!important;
-  }
-  #view-partidos tbody#games-table tr.game-row-full .game-datetime{
-   grid-area:date!important;justify-self:end!important;align-self:center!important;
-   display:flex!important;flex-direction:row!important;justify-content:flex-end!important;
-   align-items:center!important;gap:5px!important;text-align:right!important;
-   white-space:nowrap!important;font-size:11px!important;line-height:1.3!important;
-   color:#687482!important;font-variant-numeric:tabular-nums!important;
-  }
-  #view-partidos tbody#games-table tr.game-row-full .game-datetime span{display:inline!important}
-  #view-partidos tbody#games-table tr.game-row-full .game-datetime .game-mobile-final{
-   color:#d9272e!important;font-weight:900!important;letter-spacing:.45px!important;
-   margin-left:3px!important;
-  }
-  #view-partidos tbody#games-table tr.game-row-full .game-status,
-  #view-partidos tbody#games-table tr.game-row-full .game-at{display:none!important}
-  #view-partidos tbody#games-table tr.game-row-full .game-away,
-  #view-partidos tbody#games-table tr.game-row-full .game-home{
-   font-size:14px!important;line-height:1.3!important;
-  }
+ @media(max-width:700px){
+  /* La barra permanece en pantalla al desplazarse; no depende de sticky. */
+  .shell{padding-top:var(--gl-nav-height,58px)!important}
+  .shell>.sidebar{position:fixed!important;top:0!important;left:0!important;right:0!important;width:100%!important;max-width:100vw!important;z-index:10000!important;box-sizing:border-box!important;display:flex!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;gap:5px!important;padding:7px 10px!important;background:#fff!important;border:0!important;border-bottom:1px solid #d8dee5!important;box-shadow:0 3px 9px #14233418!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important}
+  .shell>.sidebar::-webkit-scrollbar{display:none!important}
+  .shell>.sidebar .nav-item{flex:0 0 auto!important;background:transparent!important;color:#596273!important;border:0!important;border-bottom:3px solid transparent!important;border-radius:4px 4px 0 0!important;box-shadow:none!important;padding:10px 12px 8px!important;font-size:12px!important;font-weight:700!important}
+  .shell>.sidebar .nav-item span{color:inherit!important}
+  .shell>.sidebar .nav-item.active{background:#fff!important;color:#d9272e!important;border-bottom-color:#d9272e!important;box-shadow:none!important}
+  /* Cada tarjeta ocupa el ancho real del móvil, sin scroll horizontal. */
+  #view-partidos .table-panel,#view-partidos .table-scroll{width:100%!important;max-width:100%!important;min-width:0!important;overflow:visible!important}
+  #view-partidos table:has(>tbody#games-table){display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;table-layout:auto!important;overflow:visible!important}
+  #view-partidos table:has(>tbody#games-table)>thead{display:none!important}
+  #view-partidos table:has(>tbody#games-table)>tbody#games-table{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;width:100%!important;max-width:100%!important;min-width:0!important;padding:8px!important;box-sizing:border-box!important}
+  #view-partidos tbody#games-table tr.game-row-full{display:grid!important;grid-template-columns:minmax(0,1fr) 40px!important;grid-template-areas:"week date" "away awayScore" "home homeScore"!important;gap:8px 9px!important;align-items:center!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important;padding:13px!important;background:#fff!important;border:1px solid #d7dee5!important;border-radius:12px!important;box-shadow:0 2px 7px #10203010!important;overflow:hidden!important}
+  #view-partidos tbody#games-table tr.game-row-full>td{display:block!important;width:auto!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0!important;padding:0!important;border:0!important;white-space:normal!important;overflow-wrap:break-word!important;text-align:left!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-week{grid-area:week!important;font-size:11px!important;font-weight:800!important;color:#697482!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-datetime{grid-area:date!important;justify-self:end!important;display:flex!important;align-items:center!important;justify-content:flex-end!important;flex-wrap:wrap!important;gap:3px 6px!important;text-align:right!important;font-size:11px!important;line-height:1.3!important;color:#667381!important;font-variant-numeric:tabular-nums!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-datetime span{display:inline!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-datetime .game-mobile-final{font-weight:800!important;color:#d9272e!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-away{grid-area:away!important;font-size:14px!important;font-weight:750!important;line-height:1.35!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-home{grid-area:home!important;font-size:14px!important;font-weight:750!important;line-height:1.35!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-away-score{grid-area:awayScore!important;text-align:right!important;font-size:17px!important;font-weight:800!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-home-score{grid-area:homeScore!important;text-align:right!important;font-size:17px!important;font-weight:800!important}
+  #view-partidos tbody#games-table tr.game-row-full>.game-at,#view-partidos tbody#games-table tr.game-row-full>.game-status{display:none!important}
+  #view-partidos tbody#games-table tr.game-row-full .muted{font-size:10px!important}
  }
  `;
  document.head.appendChild(style);
+ const sidebar=document.querySelector('.shell>.sidebar');
+ if(!sidebar)return;
+ function syncNavHeight(){
+  if(window.matchMedia('(max-width:700px)').matches){
+   document.documentElement.style.setProperty('--gl-nav-height',Math.ceil(sidebar.getBoundingClientRect().height)+'px');
+  }else document.documentElement.style.removeProperty('--gl-nav-height');
+ }
+ syncNavHeight();
+ window.addEventListener('resize',syncNavHeight,{passive:true});
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(syncNavHeight).observe(sidebar);
 })();
