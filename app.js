@@ -135,6 +135,11 @@ function ensureTeamPageStyles(){
  #team-page-root .tp-kicker{color:#ffc247;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
  #team-page-root h1{font-size:clamp(28px,4vw,46px);margin:8px 0;color:#f5f8fb}
  #team-page-root .tp-record{font-size:26px;font-weight:850;color:#ffc247}
+ #team-page-root .tp-hero-side{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+ #team-page-root .tp-standing-badges{display:grid;gap:7px}
+ #team-page-root .tp-standing-badges span{display:block;background:#263c49;border:1px solid #405867;border-radius:8px;padding:7px 10px;color:#f1c45c;font-size:12px;font-weight:850;text-transform:capitalize}
+ #team-page-root .tp-per-unit{font-size:12px;color:#b2c1cb;font-weight:700}
+
  #team-page-root .tp-muted{color:#b2c1cb}
  #team-page-root .tp-section{margin-top:27px}
  #team-page-root h2{font-size:19px;margin:0 0 12px;color:#f5f8fb}
@@ -177,15 +182,22 @@ function teamMetricRank(team,key,lowerIsBetter=false){
  const value=teamStatValue(team,key);
  return 1+vals.filter(v=>lowerIsBetter?v<value:v>value).length;
 }
-function teamMetricCard(team,{label,key,rankKey=key,lower=false,sub,shareKey,shareLabel}){
- const value=teamStatValue(team,key), rank=teamMetricRank(team,rankKey,lower);
+function teamStandingsRank(team,scope){
+ const pool=scope==='division'?teams.filter(t=>t.div===team.div):teams.filter(t=>t.conf===team.conf);
+ const ordered=[...pool].sort((a,b)=>(pct(b)-pct(a))||((Number(b.diff)||0)-(Number(a.diff)||0))||((Number(b.points)||0)-(Number(a.points)||0))||a.name.localeCompare(b.name));
+ return ordered.findIndex(t=>t.abbr===team.abbr)+1;
+}
+function teamMetricCard(team,{label,key,rankKey=key,lower=false,shareKey,shareLabel}){
+ const total=teamStatValue(team,key),gp=teamStatValue(team,'gp');
+ const average=gp?total/gp:0;
+ const rank=teamMetricRank(team,rankKey,lower);
  let visual='';
  if(shareKey){
   const a=Math.max(0,teamStatValue(team,shareKey)),b=Math.max(0,teamStatValue(team,shareLabel.key)),sum=a+b;
-  const pct=sum?Math.round(a/sum*100):0;
-  visual=`<div class="tp-breakdown"><div class="tp-donut" style="background:conic-gradient(#f2b632 0 ${pct}%,#4f9fc4 ${pct}% 100%)"></div><div class="tp-donut-legend"><div><span class="tp-dot" style="background:#f2b632"></span>${shareLabel.name}: ${fmt(a)} yds (${pct}%)</div><div><span class="tp-dot" style="background:#4f9fc4"></span>${shareLabel.other}: ${fmt(b)} yds (${100-pct}%)</div></div></div>`;
+  const pctShare=sum?Math.round(a/sum*100):0;
+  visual=`<div class="tp-breakdown"><div class="tp-donut" style="background:conic-gradient(#f2b632 0 ${pctShare}%,#4f9fc4 ${pctShare}% 100%)"></div><div class="tp-donut-legend"><div><span class="tp-dot" style="background:#f2b632"></span>${shareLabel.name}: ${fmt(a)} yds (${pctShare}%)</div><div><span class="tp-dot" style="background:#4f9fc4"></span>${shareLabel.other}: ${fmt(b)} yds (${100-pctShare}%)</div></div></div>`;
  }
- return `<article class="tp-card"><div class="tp-card-top"><div class="tp-label">${label}</div><span class="tp-rank">#${rank} de 32</span></div><div class="tp-value">${fmt(value)}</div><div class="tp-sub">${sub}</div>${visual}</article>`;
+ return `<article class="tp-card"><div class="tp-card-top"><div class="tp-label">${label}</div><span class="tp-rank">#${rank}</span></div><div class="tp-value">${average.toFixed(1)}<span class="tp-per-unit"> / partido</span></div><div class="tp-sub">Total de temporada: ${fmt(total)}</div>${visual}</article>`;
 }
 function teamProfileMarkup(team){
  const teamGames=games.filter(g=>g.home===team.abbr||g.away===team.abbr).sort((a,b)=>Number(a.week)-Number(b.week)||String(a.gameday||'').localeCompare(String(b.gameday||'')));
@@ -201,16 +213,14 @@ function teamProfileMarkup(team){
  const pass=teamStatValue(team,'passNet')||teamStatValue(team,'pass'), rush=teamStatValue(team,'rush');
  const passAllowed=teamStatValue(team,'passAllowedNet')||teamStatValue(team,'passAllowed'), rushAllowed=teamStatValue(team,'rushAllowed');
  const offenseTotal=pass+rush, defenseTotal=passAllowed+rushAllowed;
- return `<div class="tp-wrap"><button class="tp-back" type="button" data-team-back>← Volver</button><header class="tp-hero"><div><div class="tp-kicker">NFL · ${team.conf} · ${team.div}</div><h1>${team.name}</h1><div class="tp-muted">Temporada ${currentSeason()} · ${gp} partidos disputados</div></div><div class="tp-record">${team.w}-${team.l}-${team.t}<div class="tp-muted" style="font-size:12px;font-weight:650">RÉCORD</div></div></header>
+ return `<div class="tp-wrap"><button class="tp-back" type="button" data-team-back>← Volver</button><header class="tp-hero"><div><div class="tp-kicker">NFL · ${team.conf} · ${team.div}</div><h1>${team.name}</h1><div class="tp-muted">Temporada ${currentSeason()} · ${gp} partidos disputados</div></div><div class="tp-hero-side"><div class="tp-record">${team.w}-${team.l}-${team.t}<div class="tp-muted" style="font-size:12px;font-weight:650">RÉCORD</div></div><div class="tp-standing-badges"><span>${teamStandingsRank(team,'division')}° en ${String(team.div||'').toLowerCase()}</span><span>${teamStandingsRank(team,'conference')}° en ${String(team.conf||'').toLowerCase()}</span></div></div></header>
  <section class="tp-group"><h2 class="tp-group-title">Producción ofensiva</h2><div class="tp-grid">
- ${teamMetricCard(team,{label:'Puntos anotados',key:'points',sub:`${per(team.points)} por partido`})}
- ${teamMetricCard(team,{label:'Yardas totales',key:'totalYards',sub:`${per(offenseTotal)} por partido`,shareKey:'passNet',shareLabel:{key:'rush',name:'Pase neto',other:'Carrera'}})}
- ${teamMetricCard(team,{label:'Puntos por partido',key:'pointsPerGame',sub:'Promedio de temporada'})}
+ ${teamMetricCard(team,{label:'Puntos anotados',key:'points'})}
+ ${teamMetricCard(team,{label:'Yardas totales',key:'totalYards',shareKey:'passNet',shareLabel:{key:'rush',name:'Pase neto',other:'Carrera'}})}
  </div></section>
  <section class="tp-group"><h2 class="tp-group-title">Producción defensiva</h2><div class="tp-grid">
- ${teamMetricCard(team,{label:'Puntos permitidos',key:'pointsAllowed',lower:true,sub:`${per(team.pointsAllowed)} por partido`})}
- ${teamMetricCard(team,{label:'Yardas permitidas',key:'yardsAllowed',lower:true,sub:`${per(defenseTotal)} por partido`,shareKey:'passAllowedNet',shareLabel:{key:'rushAllowed',name:'Pase permitido',other:'Carrera permitida'}})}
- ${teamMetricCard(team,{label:'Puntos permitidos / partido',key:'pointsAllowedPerGame',lower:true,sub:'Promedio de temporada'})}
+ ${teamMetricCard(team,{label:'Puntos permitidos',key:'pointsAllowed',lower:true})}
+ ${teamMetricCard(team,{label:'Yardas permitidas',key:'yardsAllowed',lower:true,shareKey:'passAllowedNet',shareLabel:{key:'rushAllowed',name:'Pase permitido',other:'Carrera permitida'}})}
  </div></section>
  <section class="tp-group"><h2 class="tp-group-title">Desglose de yardas</h2><div class="tp-grid">
  ${teamMetricCard(team,{label:'Pase neto',key:'passNet',sub:`${per(pass)} por partido`})}
