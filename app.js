@@ -43,42 +43,53 @@ function sortGames(list){return [...list].sort((a,b)=>(b.week-a.week)||String(b.
 function gameLocalDateTime(g){
  const rawDate=String(g.gameday||g.gameDate||'').slice(0,10);
  const rawTime=String(g.gametime||g.gameTime||'').trim();
- if(!/^\d{4}-\d{2}-\d{2}$/.test(rawDate))return '';
- const dateOnly=new Date(`${rawDate}T12:00:00`);
- const dateLabel=new Intl.DateTimeFormat(undefined,{day:'2-digit',month:'2-digit'}).format(dateOnly);
- if(!/^\d{1,2}:\d{2}/.test(rawTime))return dateLabel;
- const [hh,mm]=rawTime.slice(0,5).split(':').map(Number);
- // nflverse publica gametime en hora del Este; convertirla primero a un instante real.
- const target={year:Number(rawDate.slice(0,4)),month:Number(rawDate.slice(5,7)),day:Number(rawDate.slice(8,10)),hour:hh,minute:mm};
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) return {date:'—',time:'—'};
+ // nflverse suele publicar gametime en Eastern Time, frecuentemente como "8:15 PM".
+ let hour=0, minute=0, match=rawTime.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+ if(!match) match=rawTime.match(/^(\d{1,2})(\d{2})\s*(AM|PM)$/i);
+ if(match){
+  hour=Number(match[1]); minute=Number(match[2]);
+  const meridiem=(match[3]||'').toUpperCase();
+  if(meridiem==='PM'&&hour<12) hour+=12;
+  if(meridiem==='AM'&&hour===12) hour=0;
+ }else{
+  const iso=rawTime.match(/^(\d{1,2}):(\d{2})$/);
+  if(!iso) return {date:new Intl.DateTimeFormat(undefined,{day:'2-digit',month:'2-digit'}).format(new Date(`${rawDate}T12:00:00`)),time:'—'};
+  hour=Number(iso[1]); minute=Number(iso[2]);
+ }
+ const target={year:+rawDate.slice(0,4),month:+rawDate.slice(5,7),day:+rawDate.slice(8,10),hour,minute};
+ // Convert the NFL's Eastern wall-clock kickoff into a real UTC instant, accounting for DST.
  const tz='America/New_York';
  let utc=Date.UTC(target.year,target.month-1,target.day,target.hour,target.minute);
  for(let n=0;n<3;n++){
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(utc));
   const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
-  const represented=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);
-  utc+=Date.UTC(target.year,target.month-1,target.day,target.hour,target.minute)-represented;
+  utc+=Date.UTC(target.year,target.month-1,target.day,target.hour,target.minute)-Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);
  }
  const instant=new Date(utc);
- const timeLabel=new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(instant);
- return `${dateLabel} · ${timeLabel}`;
+ return {
+  date:new Intl.DateTimeFormat(undefined,{day:'2-digit',month:'2-digit'}).format(instant),
+  time:new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(instant)
+ };
 }
 function gameRow(g,compact=false){
  const score = g.status === 'FINAL' && g.awayPts != null && g.homePts != null ? `${g.awayPts} — ${g.homePts}` : '—';
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  const localDateTime=gameLocalDateTime(g);
  return compact
-  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${score}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`
-  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime">${localDateTime||'—'}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
+  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date} · ${localDateTime.time}</td><td class="game-status">${status}</td></tr>`
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span><span>${localDateTime.time}</span></td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
  const week=$('#week-filter')?.value||'all';
  const filtered=sortGames(games).filter(g=>(week==='all'||String(g.week)===week)&&`${g.away} ${g.home} ${g.awayName} ${g.homeName}`.toLowerCase().includes(search));
  const gamesTable=$('#games-table');
- const header=gamesTable?.closest('table')?.querySelector('thead tr');
- if(header && header.children.length===7) header.children[0].insertAdjacentHTML('afterend','<th class="game-date-heading">FECHA / HORA</th>');
+ const table=gamesTable?.closest('table');
+ const header=table?.querySelector('thead tr');
+ if(header) header.innerHTML='<th>SEM.</th><th>FECHA / HORA</th><th>VISITANTE</th><th>PTS</th><th></th><th>PTS</th><th>LOCAL</th><th>ESTADO</th>';
  gamesTable.innerHTML=filtered.map(g=>gameRow(g)).join('')||'<tr><td colspan="8">No hay partidos para esos filtros.</td></tr>';
- $('#recent-games').innerHTML=sortGames(games).slice(0,5).map(g=>gameRow(g,true)).join('')||'<tr><td colspan="5">Todavía no hay partidos disponibles.</td></tr>';
+ $('#recent-games').innerHTML=sortGames(games).slice(0,5).map(g=>gameRow(g,true)).join('')||'<tr><td colspan="7">Todavía no hay partidos disponibles.</td></tr>';
 }
 function renderOffense(){
  const q=($('#offense-search')?.value||'').toLowerCase(), mode=$('#offense-mode')?.value||'total';
@@ -821,4 +832,58 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
  }
  `;
  document.head.appendChild(style);
+})();
+
+
+/* GRIDIRON LAB V5 — calendario consistente en escritorio y móvil */
+(function fixGamesLayoutV5(){
+ if(document.getElementById('gridiron-games-v5')) return;
+ const s=document.createElement('style'); s.id='gridiron-games-v5';
+ s.textContent=`
+ /* Escritorio: tabla completa, centrada y distribuida sin scroll lateral */
+ #view-partidos .table-scroll:has(#games-table){overflow-x:hidden!important}
+ #games-table{width:100%!important}
+ #games-table:has(tr.game-row-full){ }
+ #games-table{ }
+ #games-table tr.game-row-full td{vertical-align:middle;text-align:center}
+ #games-table tr.game-row-full .game-away,
+ #games-table tr.game-row-full .game-home{font-weight:700}
+ #games-table tr.game-row-full .game-datetime{white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.35}
+ #games-table tr.game-row-full .game-datetime span{display:block}
+ #games-table tr.game-row-full .game-week{white-space:nowrap}
+ #games-table tr.game-row-full .game-status{white-space:nowrap}
+ #games-table{ }
+ #games-table:has(tr.game-row-full) td:nth-child(1){width:6%}
+ #games-table:has(tr.game-row-full) td:nth-child(2){width:12%}
+ #games-table:has(tr.game-row-full) td:nth-child(3){width:20%}
+ #games-table:has(tr.game-row-full) td:nth-child(4),
+ #games-table:has(tr.game-row-full) td:nth-child(6){width:6%}
+ #games-table:has(tr.game-row-full) td:nth-child(5){width:4%}
+ #games-table:has(tr.game-row-full) td:nth-child(7){width:20%}
+ #games-table:has(tr.game-row-full) td:nth-child(8){width:12%}
+ #games-table:has(tr.game-row-full) tr{height:auto}
+ #games-table:has(tr.game-row-full) tr td{padding:13px 8px}
+ #games-table:has(tr.game-row-full) tr td:nth-child(3),
+ #games-table:has(tr.game-row-full) tr td:nth-child(7){overflow-wrap:normal;word-break:normal}
+ /* Móvil: tarjetas verticales, sin desplazamiento horizontal */
+ @media(max-width:640px){
+  #view-partidos .table-scroll:has(#games-table){overflow:visible!important}
+  #games-table:has(tr.game-row-full){display:grid!important;grid-template-columns:minmax(0,1fr);gap:9px;padding:8px;width:100%!important}
+  thead:has(+ #games-table){display:none!important}
+  #games-table tr.game-row-full{display:grid!important;grid-template-columns:minmax(0,1fr) 48px;grid-template-areas:"meta meta" "away awayScore" "home homeScore";align-items:center;gap:0 8px;padding:9px 12px!important;margin:0;background:#fff;border:1px solid #d7dee5;border-radius:11px;box-shadow:0 2px 7px #10203010}
+  #games-table tr.game-row-full td{display:block!important;width:auto!important;min-width:0;padding:5px 0!important;border:0!important;text-align:left!important;white-space:normal!important}
+  #games-table tr.game-row-full .game-week{grid-area:meta;font-size:10px;color:#687482;font-weight:800;display:inline-block!important}
+  #games-table tr.game-row-full .game-datetime{grid-area:meta;justify-self:end;font-size:10px;color:#687482;text-align:right!important;display:block!important}
+  #games-table tr.game-row-full .game-datetime span{display:inline}
+  #games-table tr.game-row-full .game-datetime span+span:before{content:" · "}
+  #games-table tr.game-row-full .game-away{grid-area:away;font-size:14px;font-weight:750;overflow-wrap:normal}
+  #games-table tr.game-row-full .game-home{grid-area:home;font-size:14px;font-weight:750;overflow-wrap:normal}
+  #games-table tr.game-row-full .game-away-score{grid-area:awayScore;text-align:right!important;font-size:16px;font-weight:850}
+  #games-table tr.game-row-full .game-home-score{grid-area:homeScore;text-align:right!important;font-size:16px;font-weight:850}
+  #games-table tr.game-row-full .game-at{display:none!important}
+  #games-table tr.game-row-full .game-status{display:none!important}
+  #games-table tr.game-row-full .muted{font-size:11px}
+ }
+ `;
+ document.head.appendChild(s);
 })();
