@@ -39,46 +39,66 @@ function pct(t){
  const gp=w+l+ties;
  return gp?(w+0.5*ties)/gp:0;
 }
-function sortGames(list){return [...list].sort((a,b)=>(b.week-a.week)||String(b.gameday||'').localeCompare(String(a.gameday||'')))}
+function sortGames(list){
+ return [...list].sort((a,b)=>{
+  const week=(Number(a.week)||0)-(Number(b.week)||0);
+  if(week) return week;
+  const dateA=String(a.gameday||a.gameDate||'');
+  const dateB=String(b.gameday||b.gameDate||'');
+  const date=dateA.localeCompare(dateB);
+  if(date) return date;
+  const timeA=kickoffMinutes(a);
+  const timeB=kickoffMinutes(b);
+  return timeA-timeB||String(a.gameId||'').localeCompare(String(b.gameId||''));
+ });
+}
+function kickoffMinutes(g){
+ const raw=String(g.gametime||g.gameTime||'').trim();
+ const m=raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i)||raw.match(/^(\d{1,2})(\d{2})\s*(AM|PM)$/i);
+ if(!m)return 0;
+ let h=Number(m[1]);const mer=(m[3]||'').toUpperCase();
+ if(mer==='PM'&&h<12)h+=12;if(mer==='AM'&&h===12)h=0;
+ return h*60+Number(m[2]);
+}
 function gameLocalDateTime(g){
  const rawDate=String(g.gameday||g.gameDate||'').slice(0,10);
  const rawTime=String(g.gametime||g.gameTime||'').trim();
- if(!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) return {date:'—',time:'—'};
- // nflverse suele publicar gametime en Eastern Time, frecuentemente como "8:15 PM".
- let hour=0, minute=0, match=rawTime.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) return {date:'—',time:''};
+ const [year,month,day]=rawDate.split('-').map(Number);
+ // La fecha se presenta siempre en formato mexicano; la hora se convierte
+ // desde la hora oficial de calendario NFL (Eastern) a la zona del dispositivo.
+ const date=`${String(day).padStart(2,'0')}/${String(month).padStart(2,'0')}/${year}`;
+ if(!rawTime || gameIsFinal(g)) return {date,time:''};
+ let match=rawTime.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
  if(!match) match=rawTime.match(/^(\d{1,2})(\d{2})\s*(AM|PM)$/i);
- if(match){
-  hour=Number(match[1]); minute=Number(match[2]);
-  const meridiem=(match[3]||'').toUpperCase();
-  if(meridiem==='PM'&&hour<12) hour+=12;
-  if(meridiem==='AM'&&hour===12) hour=0;
- }else{
-  const iso=rawTime.match(/^(\d{1,2}):(\d{2})$/);
-  if(!iso) return {date:new Intl.DateTimeFormat(undefined,{day:'2-digit',month:'2-digit'}).format(new Date(`${rawDate}T12:00:00`)),time:'—'};
-  hour=Number(iso[1]); minute=Number(iso[2]);
- }
- const target={year:+rawDate.slice(0,4),month:+rawDate.slice(5,7),day:+rawDate.slice(8,10),hour,minute};
- // Convert the NFL's Eastern wall-clock kickoff into a real UTC instant, accounting for DST.
+ if(!match) return {date,time:''};
+ let hour=Number(match[1]), minute=Number(match[2]);
+ const meridiem=(match[3]||'').toUpperCase();
+ if(meridiem==='PM'&&hour<12) hour+=12;
+ if(meridiem==='AM'&&hour===12) hour=0;
+ const target={year,month,day,hour,minute};
  const tz='America/New_York';
- let utc=Date.UTC(target.year,target.month-1,target.day,target.hour,target.minute);
- for(let n=0;n<3;n++){
+ let utc=Date.UTC(year,month-1,day,hour,minute);
+ for(let n=0;n<4;n++){
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(utc));
-  const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
-  utc+=Date.UTC(target.year,target.month-1,target.day,target.hour,target.minute)-Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);
+  const values=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+  const represented=Date.UTC(+values.year,+values.month-1,+values.day,+values.hour,+values.minute);
+  const desired=Date.UTC(target.year,target.month-1,target.day,target.hour,target.minute);
+  const delta=desired-represented;
+  utc+=delta;
+  if(delta===0) break;
  }
  const instant=new Date(utc);
- return {
-  date:new Intl.DateTimeFormat(undefined,{day:'2-digit',month:'2-digit'}).format(instant),
-  time:new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(instant)
- };
+ const localDate=new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}).format(instant);
+ return {date:localDate,time:new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(instant)};
 }
 function gameRow(g,compact=false){
  const score = g.status === 'FINAL' && g.awayPts != null && g.homePts != null ? `${g.awayPts} — ${g.homePts}` : '—';
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  const localDateTime=gameLocalDateTime(g);
  return compact
-  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date} · ${localDateTime.time}</td><td class="game-status">${status}</td></tr>`
-  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span><span>${localDateTime.time}</span></td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
+  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -196,7 +216,8 @@ function openGameDetail(game){
  ensureGameDetailModal();
  const modal=$('#game-detail-modal');
  $('#gd-title').textContent=`${game.awayName} vs. ${game.homeName}`;
- $('#gd-sub').textContent=`Temporada ${game.season} · Semana ${game.week} · ${game.gameday||''} · ${game.status}`;
+ const detailDateTime=gameLocalDateTime(game);
+ $('#gd-sub').textContent=`Temporada ${game.season} · Semana ${game.week} · ${detailDateTime.date}${detailDateTime.time?` · ${detailDateTime.time}`:''} · ${game.status}`;
  const hasStats=!!(game.awayStats||game.homeStats);
  $('#gd-content').innerHTML=`<div class="gd-score">${game.awayPts??'—'} — ${game.homePts??'—'}</div>${hasStats?gdCompareTable(game):'<p class="gd-sub">Las estadísticas detalladas de este partido todavía no están disponibles en la fuente de datos.</p>'}`;
  modal.classList.add('open');
