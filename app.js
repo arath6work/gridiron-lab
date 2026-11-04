@@ -128,44 +128,100 @@ function setupGameDetailInteractions(){
 function ensureTeamPageStyles(){
  if($('#team-page-styles'))return;
  const st=document.createElement('style');st.id='team-page-styles';st.textContent=`
- #team-page-root{position:fixed;inset:0;z-index:950;background:#0d1720;color:#eaf0f4;overflow:auto;padding:26px clamp(16px,4vw,56px) 56px}
+ #team-page-root{position:fixed;inset:0;z-index:950;background:#0b151e;color:#eaf1f6;overflow:auto;padding:26px clamp(16px,4vw,56px) 56px}
  #team-page-root .tp-wrap{max-width:1320px;margin:0 auto}
- #team-page-root .tp-back{border:1px solid #405463;background:#1b2b37;color:#eaf0f4;border-radius:9px;padding:9px 14px;cursor:pointer}
- #team-page-root .tp-hero{margin:24px 0 20px;padding:28px;border:1px solid #2b414f;border-radius:16px;background:linear-gradient(120deg,#172936,#101c26 70%);display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
- #team-page-root .tp-kicker{color:#f0b323;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
- #team-page-root h1{font-size:clamp(28px,4vw,46px);margin:8px 0;color:#f5f7f9}
- #team-page-root .tp-record{font-size:26px;font-weight:800;color:#ffc247}
- #team-page-root .tp-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
- #team-page-root .tp-card{background:#142431;border:1px solid #2a3d49;border-radius:12px;padding:16px}
- #team-page-root .tp-label{font-size:11px;color:#9eafbb;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
- #team-page-root .tp-value{font-size:25px;font-weight:800;margin-top:8px;color:#f4f7f9}
- #team-page-root .tp-section{margin-top:26px}
- #team-page-root h2{font-size:19px;margin:0 0 12px;color:#f5f7f9}
- #team-page-root .tp-table{width:100%;border-collapse:collapse;background:#142431;border:1px solid #2a3d49;border-radius:12px;overflow:hidden}
- #team-page-root .tp-table th,#team-page-root .tp-table td{padding:12px 14px;border-bottom:1px solid #2a3d49;text-align:left;font-size:13px}
- #team-page-root .tp-table th{background:#243947;color:#b9c8d2;font-size:11px;text-transform:uppercase}
- #team-page-root .tp-table tr:nth-child(even){background:#192c39}
- #team-page-root .tp-table tr[data-team-game]{cursor:pointer}
- #team-page-root .tp-table tr[data-team-game]:hover{background:#2a4050}
- #team-page-root .tp-muted{color:#9eafbb}
- #team-page-root .tp-pill{display:inline-block;border-radius:30px;padding:4px 8px;background:#203744;color:#dbe5eb;font-size:11px;font-weight:700}
- @media(max-width:850px){#team-page-root .tp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#team-page-root .tp-table{display:block;overflow-x:auto;white-space:nowrap}}
+ #team-page-root .tp-back{border:1px solid #425968;background:#1b2d3a;color:#f3f7fa;border-radius:9px;padding:9px 14px;cursor:pointer}
+ #team-page-root .tp-hero{margin:22px 0 20px;padding:28px;border:1px solid #2d4655;border-radius:16px;background:linear-gradient(120deg,#172b39,#101e29 72%);display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+ #team-page-root .tp-kicker{color:#ffc247;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+ #team-page-root h1{font-size:clamp(28px,4vw,46px);margin:8px 0;color:#f5f8fb}
+ #team-page-root .tp-record{font-size:26px;font-weight:850;color:#ffc247}
+ #team-page-root .tp-muted{color:#b2c1cb}
+ #team-page-root .tp-section{margin-top:27px}
+ #team-page-root h2{font-size:19px;margin:0 0 12px;color:#f5f8fb}
+ #team-page-root .tp-section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+ #team-page-root .tp-group{margin:18px 0 22px}
+ #team-page-root .tp-group-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#aebfca;font-weight:850;margin:0 0 10px}
+ #team-page-root .tp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+ #team-page-root .tp-card{background:#152936;border:1px solid #2c4351;border-radius:12px;padding:15px;min-width:0}
+ #team-page-root .tp-card-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+ #team-page-root .tp-label{font-size:10px;color:#b4c4ce;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+ #team-page-root .tp-rank{font-size:10px;font-weight:850;color:#ffc247;background:#3a3322;border:1px solid #66552e;border-radius:20px;padding:4px 8px;white-space:nowrap}
+ #team-page-root .tp-value{font-size:25px;font-weight:850;margin-top:9px;color:#f6f8fa}
+ #team-page-root .tp-sub{font-size:12px;color:#b2c1cb;margin-top:3px}
+ #team-page-root .tp-breakdown{display:flex;align-items:center;gap:13px;margin-top:12px}
+ #team-page-root .tp-donut{width:66px;height:66px;flex:0 0 66px;border-radius:50%;position:relative}
+ #team-page-root .tp-donut:after{content:'';position:absolute;inset:10px;border-radius:50%;background:#152936}
+ #team-page-root .tp-donut-legend{display:grid;gap:5px;font-size:11px;color:#c4d0d8}
+ #team-page-root .tp-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+ #team-page-root .tp-table-wrap{overflow-x:auto;border:1px solid #304957;border-radius:12px;background:#12232e}
+ #team-page-root .tp-table{width:100%;border-collapse:collapse;min-width:620px;color:#e7eef3}
+ #team-page-root .tp-table th,#team-page-root .tp-table td{padding:12px 14px;border-bottom:1px solid #2a414e;text-align:left;font-size:13px;color:#e3ebf0}
+ #team-page-root .tp-table th{background:#29404e;color:#f0c45d;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+ #team-page-root .tp-table tbody tr:nth-child(odd){background:#142936}
+ #team-page-root .tp-table tbody tr:nth-child(even){background:#1a3341}
+ #team-page-root .tp-table tbody tr[data-team-game]{cursor:pointer}
+ #team-page-root .tp-table tbody tr[data-team-game]:hover{background:#294757}
+ #team-page-root .tp-pill{display:inline-block;border-radius:30px;padding:4px 8px;background:#294351;color:#e8f0f5;font-size:11px;font-weight:800}
+ #team-page-root .tp-result-win{color:#55d69a;font-weight:900}
+ #team-page-root .tp-result-loss{color:#ff8585;font-weight:900}
+ #team-page-root .tp-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+ #team-page-root .tp-form-chip{background:#172d3a;border:1px solid #314b5a;border-radius:9px;padding:9px 12px;font-weight:850;letter-spacing:.08em}
+ #team-page-root .tp-streak{color:#ffc247;font-weight:850}
+ @media(max-width:900px){#team-page-root .tp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+ @media(max-width:560px){#team-page-root .tp-grid{grid-template-columns:1fr}#team-page-root .tp-hero{padding:20px}}
  `;document.head.appendChild(st);
 }
 function teamStatValue(t,key){const v=Number(t?.[key]);return Number.isFinite(v)?v:0;}
+function teamMetricRank(team,key,lowerIsBetter=false){
+ const vals=teams.map(t=>teamStatValue(t,key));
+ const value=teamStatValue(team,key);
+ return 1+vals.filter(v=>lowerIsBetter?v<value:v>value).length;
+}
+function teamMetricCard(team,{label,key,rankKey=key,lower=false,sub,shareKey,shareLabel}){
+ const value=teamStatValue(team,key), rank=teamMetricRank(team,rankKey,lower);
+ let visual='';
+ if(shareKey){
+  const a=Math.max(0,teamStatValue(team,shareKey)),b=Math.max(0,teamStatValue(team,shareLabel.key)),sum=a+b;
+  const pct=sum?Math.round(a/sum*100):0;
+  visual=`<div class="tp-breakdown"><div class="tp-donut" style="background:conic-gradient(#f2b632 0 ${pct}%,#4f9fc4 ${pct}% 100%)"></div><div class="tp-donut-legend"><div><span class="tp-dot" style="background:#f2b632"></span>${shareLabel.name}: ${fmt(a)} yds (${pct}%)</div><div><span class="tp-dot" style="background:#4f9fc4"></span>${shareLabel.other}: ${fmt(b)} yds (${100-pct}%)</div></div></div>`;
+ }
+ return `<article class="tp-card"><div class="tp-card-top"><div class="tp-label">${label}</div><span class="tp-rank">#${rank} de 32</span></div><div class="tp-value">${fmt(value)}</div><div class="tp-sub">${sub}</div>${visual}</article>`;
+}
 function teamProfileMarkup(team){
- const teamGames=sortGames(games.filter(g=>g.home===team.abbr||g.away===team.abbr));
- const played=teamGames.filter(gameIsFinal), upcoming=teamGames.filter(g=>!gameIsFinal(g));
- const lastFive=played.slice(0,5);const streak=lastFive.map(g=>{const home=g.home===team.abbr,forPts=home?g.homePts:g.awayPts,against=home?g.awayPts:g.homePts;return forPts>against?'W':forPts<against?'L':'T'}).join(' · ')||'Sin partidos';
- const rows=teamGames.map(g=>{const home=g.home===team.abbr,opp=home?g.awayName:g.homeName,forPts=home?g.homePts:g.awayPts,against=home?g.awayPts:g.homePts;const result=gameIsFinal(g)?(forPts>against?'W':forPts<against?'L':'T'):'—';return `<tr data-team-game="${g.gameId||''}"><td>W${g.week}</td><td>${home?'vs':'@'} ${opp}</td><td>${gameIsFinal(g)?`${forPts}–${against}`:'—'}</td><td><span class="tp-pill">${g.status||'PROGRAMADO'}</span></td><td>${result}</td></tr>`}).join('');
+ const teamGames=games.filter(g=>g.home===team.abbr||g.away===team.abbr).sort((a,b)=>Number(a.week)-Number(b.week)||String(a.gameday||'').localeCompare(String(b.gameday||'')));
+ const played=teamGames.filter(gameIsFinal).sort((a,b)=>Number(b.week)-Number(a.week));
+ const upcoming=teamGames.filter(g=>!gameIsFinal(g)).sort((a,b)=>Number(a.week)-Number(b.week));
+ const lastFive=played.slice(0,5);
+ const results=lastFive.map(g=>{const home=g.home===team.abbr,forPts=Number(home?g.homePts:g.awayPts),against=Number(home?g.awayPts:g.homePts);return forPts>against?'W':forPts<against?'L':'T'});
+ const form=results.length?results.join(' · '):'Sin partidos';
+ let currentStreak='Sin racha';
+ if(results.length){const first=results[0],count=results.findIndex(x=>x!==first);currentStreak=`${first==='W'?'Victoria':first==='L'?'Derrota':'Empate'}${(count<0?results.length:count)>1?'s':''} consecutiva${(count<0?results.length:count)>1?'s':''}: ${count<0?results.length:count}`;}
+ const rows=teamGames.map(g=>{const home=g.home===team.abbr,opp=home?g.awayName:g.homeName,forPts=home?g.homePts:g.awayPts,against=home?g.awayPts:g.homePts;const result=gameIsFinal(g)?(forPts>against?'W':forPts<against?'L':'T'):'—';const cls=result==='W'?'tp-result-win':result==='L'?'tp-result-loss':'';return `<tr data-team-game="${g.gameId||''}" tabindex="0"><td>W${g.week}</td><td>${home?'vs':'@'} ${opp}</td><td>${gameIsFinal(g)?`${forPts}–${against}`:'—'}</td><td><span class="tp-pill">${g.status||'PROGRAMADO'}</span></td><td class="${cls}">${result}</td></tr>`}).join('');
  const gp=teamStatValue(team,'gp'), per=(v)=>gp?(v/gp).toFixed(1):'—';
- return `<div class="tp-wrap"><button class="tp-back" type="button" data-team-back>← Volver</button><header class="tp-hero"><div><div class="tp-kicker">NFL · ${team.conf} · ${team.div}</div><h1>${team.name}</h1><div class="tp-muted">Temporada ${currentSeason()} · ${gp} partidos disputados</div></div><div class="tp-record">${team.w}-${team.l}-${team.t}<div class="tp-muted" style="font-size:12px;font-weight:600">RÉCORD</div></div></header>
- <div class="tp-grid"><article class="tp-card"><div class="tp-label">Puntos anotados</div><div class="tp-value">${fmt(team.points)}</div><div class="tp-muted">${per(team.points)} por partido</div></article><article class="tp-card"><div class="tp-label">Puntos permitidos</div><div class="tp-value">${fmt(team.pointsAllowed)}</div><div class="tp-muted">${per(team.pointsAllowed)} por partido</div></article><article class="tp-card"><div class="tp-label">Yardas totales</div><div class="tp-value">${fmt(team.totalYards)}</div><div class="tp-muted">${per(team.totalYards)} por partido</div></article><article class="tp-card"><div class="tp-label">Yardas permitidas</div><div class="tp-value">${fmt(team.yardsAllowed)}</div><div class="tp-muted">${per(team.yardsAllowed)} por partido</div></article>
- <article class="tp-card"><div class="tp-label">Pase neto</div><div class="tp-value">${fmt(team.passNet??team.pass)}</div><div class="tp-muted">${per(team.passNet??team.pass)} por partido</div></article><article class="tp-card"><div class="tp-label">Carrera</div><div class="tp-value">${fmt(team.rush)}</div><div class="tp-muted">${per(team.rush)} por partido</div></article><article class="tp-card"><div class="tp-label">Pase permitido</div><div class="tp-value">${fmt(team.passAllowedNet??team.passAllowed)}</div><div class="tp-muted">${per(team.passAllowedNet??team.passAllowed)} por partido</div></article><article class="tp-card"><div class="tp-label">Carrera permitida</div><div class="tp-value">${fmt(team.rushAllowed)}</div><div class="tp-muted">${per(team.rushAllowed)} por partido</div></article></div>
- <section class="tp-section"><h2>Forma reciente</h2><article class="tp-card"><div class="tp-value">${streak}</div><div class="tp-muted">Resultados de los últimos ${lastFive.length} partidos terminados</div></article></section>
- <section class="tp-section"><h2>Calendario e historial</h2><table class="tp-table"><thead><tr><th>Semana</th><th>Rival</th><th>Marcador</th><th>Estado</th><th>Resultado</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Sin partidos disponibles.</td></tr>'}</tbody></table></section>
+ const pass=teamStatValue(team,'passNet')||teamStatValue(team,'pass'), rush=teamStatValue(team,'rush');
+ const passAllowed=teamStatValue(team,'passAllowedNet')||teamStatValue(team,'passAllowed'), rushAllowed=teamStatValue(team,'rushAllowed');
+ const offenseTotal=pass+rush, defenseTotal=passAllowed+rushAllowed;
+ return `<div class="tp-wrap"><button class="tp-back" type="button" data-team-back>← Volver</button><header class="tp-hero"><div><div class="tp-kicker">NFL · ${team.conf} · ${team.div}</div><h1>${team.name}</h1><div class="tp-muted">Temporada ${currentSeason()} · ${gp} partidos disputados</div></div><div class="tp-record">${team.w}-${team.l}-${team.t}<div class="tp-muted" style="font-size:12px;font-weight:650">RÉCORD</div></div></header>
+ <section class="tp-group"><h2 class="tp-group-title">Producción ofensiva</h2><div class="tp-grid">
+ ${teamMetricCard(team,{label:'Puntos anotados',key:'points',sub:`${per(team.points)} por partido`})}
+ ${teamMetricCard(team,{label:'Yardas totales',key:'totalYards',sub:`${per(offenseTotal)} por partido`,shareKey:'passNet',shareLabel:{key:'rush',name:'Pase neto',other:'Carrera'}})}
+ ${teamMetricCard(team,{label:'Puntos por partido',key:'pointsPerGame',sub:'Promedio de temporada'})}
+ </div></section>
+ <section class="tp-group"><h2 class="tp-group-title">Producción defensiva</h2><div class="tp-grid">
+ ${teamMetricCard(team,{label:'Puntos permitidos',key:'pointsAllowed',lower:true,sub:`${per(team.pointsAllowed)} por partido`})}
+ ${teamMetricCard(team,{label:'Yardas permitidas',key:'yardsAllowed',lower:true,sub:`${per(defenseTotal)} por partido`,shareKey:'passAllowedNet',shareLabel:{key:'rushAllowed',name:'Pase permitido',other:'Carrera permitida'}})}
+ ${teamMetricCard(team,{label:'Puntos permitidos / partido',key:'pointsAllowedPerGame',lower:true,sub:'Promedio de temporada'})}
+ </div></section>
+ <section class="tp-group"><h2 class="tp-group-title">Desglose de yardas</h2><div class="tp-grid">
+ ${teamMetricCard(team,{label:'Pase neto',key:'passNet',sub:`${per(pass)} por partido`})}
+ ${teamMetricCard(team,{label:'Carrera',key:'rush',sub:`${per(rush)} por partido`})}
+ ${teamMetricCard(team,{label:'Pase permitido',key:'passAllowedNet',lower:true,sub:`${per(passAllowed)} por partido`})}
+ ${teamMetricCard(team,{label:'Carrera permitida',key:'rushAllowed',lower:true,sub:`${per(rushAllowed)} por partido`})}
+ </div></section>
+ <section class="tp-section"><h2>Forma reciente</h2><article class="tp-card"><div class="tp-form">${results.map((r,i)=>`<span class="tp-form-chip ${r==='W'?'tp-result-win':r==='L'?'tp-result-loss':''}">${r}</span>`).join('')||'Sin partidos terminados'}</div><div class="tp-streak" style="margin-top:12px">${currentStreak}</div><div class="tp-muted" style="font-size:12px;margin-top:4px">Últimos ${lastFive.length} partidos terminados · del más reciente al más antiguo</div></article></section>
+ <section class="tp-section"><h2>Calendario e historial</h2><div class="tp-table-wrap"><table class="tp-table"><thead><tr><th>Semana</th><th>Rival</th><th>Marcador</th><th>Estado</th><th>Resultado</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Sin partidos disponibles.</td></tr>'}</tbody></table></div><div class="tp-muted" style="font-size:12px;margin-top:8px">Ordenado de la semana más antigua a la más reciente.</div></section>
  <section class="tp-section"><h2>Próximos partidos</h2><div class="tp-muted">${upcoming.length?upcoming.map(g=>`<span class="tp-pill" style="margin:0 6px 8px 0">W${g.week} · ${g.awayName} vs ${g.homeName}</span>`).join(''):'No hay partidos pendientes en el calendario disponible.'}</div></section>
- <p class="tp-muted" style="margin-top:24px;font-size:12px">Fuente estadística: nflverse. Lesiones y probabilidades se integrarán en una siguiente fase; no se muestran datos estimados como si fueran oficiales.</p></div>`;
+ <p class="tp-muted" style="margin-top:24px;font-size:12px">Fuente estadística: nflverse. Las posiciones comparan a los 32 equipos en la temporada seleccionada. Lesiones y probabilidades se integrarán en una siguiente fase.</p></div>`;
 }
 function openTeamProfile(abbr,push=true){
  const team=teams.find(t=>t.abbr===abbr);if(!team)return;
