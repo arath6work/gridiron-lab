@@ -44,8 +44,8 @@ function gameRow(g,compact=false){
  const score = g.status === 'FINAL' && g.awayPts != null && g.homePts != null ? `${g.awayPts} — ${g.homePts}` : '—';
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  return compact
-  ? `<tr class="game-clickable" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td>W${g.week}</td><td class="team-cell">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score">${score}</td><td class="team-cell">${g.homeName} <span class="muted">(${g.home})</span></td><td><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`
-  : `<tr class="game-clickable" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td>W${g.week}</td><td class="team-cell">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score">${g.awayPts ?? '—'}</td><td>@</td><td class="score">${g.homePts ?? '—'}</td><td class="team-cell">${g.homeName} <span class="muted">(${g.home})</span></td><td><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
+  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${score}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">@</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -85,7 +85,49 @@ function ensureGameDetailModal(){
  const style=document.createElement('style');
  style.textContent=`#game-detail-modal{position:fixed;inset:0;z-index:1000;background:rgba(3,9,14,.78);display:none;align-items:center;justify-content:center;padding:18px}#game-detail-modal.open{display:flex}#game-detail-modal .gd-card{width:min(980px,100%);max-height:90vh;overflow:auto;background:#111d27;color:#eaf0f4;border:1px solid #344654;border-radius:14px;padding:22px;box-shadow:0 20px 70px #0009}#game-detail-modal .gd-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}#game-detail-modal h2{margin:0 0 6px;font-size:clamp(20px,3vw,30px)}#game-detail-modal .gd-sub{color:#9eafbb;font-size:13px}#game-detail-modal button{cursor:pointer}#game-detail-modal .gd-close{border:1px solid #526675;background:#1a2a36;color:#fff;border-radius:8px;padding:8px 12px}#game-detail-modal .gd-score{font-size:24px;font-weight:800;color:#f0b323;margin:14px 0}#game-detail-modal .gd-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}#game-detail-modal .gd-tabs button{border:1px solid #415462;background:#1a2a36;color:#dce5eb;border-radius:8px;padding:8px 12px}#game-detail-modal .gd-tabs button.active{background:#f0b323;color:#101820;border-color:#f0b323}#game-detail-modal .gd-table{width:100%;border-collapse:collapse;font-size:13px}#game-detail-modal .gd-table th,#game-detail-modal .gd-table td{padding:10px 8px;border-bottom:1px solid #2a3a46;text-align:right}#game-detail-modal .gd-table th:first-child,#game-detail-modal .gd-table td:first-child{text-align:left}#game-detail-modal .gd-table th{color:#9eafbb;font-size:11px}#game-detail-modal .gd-team{color:#f0b323;background:none;border:0;padding:0;font:inherit;font-weight:700;text-align:left}#game-detail-modal .gd-history-row{cursor:pointer}#game-detail-modal .gd-history-row:hover,.game-clickable:hover{background:rgba(240,179,35,.08)}.game-clickable{cursor:pointer}.game-clickable:focus{outline:2px solid #f0b323;outline-offset:-2px}`;
  style.textContent+=`\n/* Contraste del detalle de partido: evita que estilos globales claros se filtren al modal */\n#game-detail-modal .gd-card{background:#101c26;color:#edf3f7}\n#game-detail-modal .gd-table{background:#142431;color:#edf3f7;border-collapse:separate;border-spacing:0}\n#game-detail-modal .gd-table thead th{background:#243947!important;color:#f3f6f8!important;border-bottom:1px solid #526775!important}\n#game-detail-modal .gd-table tbody tr{background:#172936!important;color:#e8eff4!important}\n#game-detail-modal .gd-table tbody tr:nth-child(even){background:#1d303d!important}\n#game-detail-modal .gd-table tbody td{background:transparent!important;color:#e8eff4!important;border-bottom:1px solid #344956!important}\n#game-detail-modal .gd-table tbody td:first-child{color:#c6d2db!important;font-weight:600}\n#game-detail-modal .gd-table .gd-team{color:#ffc247!important}\n#game-detail-modal .gd-table .gd-team:hover{color:#ffda83!important;text-decoration:underline}\n#game-detail-modal .gd-sub{color:#b8c6d0!important}\n#game-detail-modal .gd-history-row:hover{background:#2a4050!important}\n#game-detail-modal .gd-tabs button{color:#e8eff4!important;background:#203441!important}\n#game-detail-modal .gd-tabs button.active{color:#17212a!important;background:#f0b323!important}\n#game-detail-modal .gd-close{color:#f4f7f9!important;background:#203441!important}\n#game-detail-modal .gd-score{color:#ffc247!important}\n`;
-document.head.appendChild(style);
+
+ style.textContent+=`
+ /* Responsive móvil: calendario en tarjetas verticales y ficha sin scroll horizontal */
+ @media(max-width:640px){
+  #games-table{display:block;width:100%;min-width:0}
+  #games-table thead{display:none}
+  #games-table tbody{display:grid;gap:10px;padding:8px}
+  #games-table tr.game-row-full{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"week status" "away awayScore" "home homeScore";gap:0 10px;padding:8px 12px;background:#fff;border:1px solid #d7dee5;border-radius:12px;box-shadow:0 2px 7px #10203010}
+  #games-table tr.game-row-full td{display:block;min-width:0;padding:7px 0;border:0!important;text-align:left!important;white-space:normal}
+  #games-table tr.game-row-full .game-week{grid-area:week;color:#7b8794;font-size:11px;font-weight:800;padding-bottom:3px}
+  #games-table tr.game-row-full .game-status{grid-area:status;text-align:right!important;font-size:10px;font-weight:800;padding-bottom:3px}
+  #games-table tr.game-row-full .game-away{grid-area:away;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+  #games-table tr.game-row-full .game-away-score{grid-area:awayScore;text-align:right!important;font-size:17px;font-weight:850;align-self:center}
+  #games-table tr.game-row-full .game-at{display:none!important}
+  #games-table tr.game-row-full .game-home{grid-area:home;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+  #games-table tr.game-row-full .game-home-score{grid-area:homeScore;text-align:right!important;font-size:17px;font-weight:850;align-self:center}
+  #games-table tr.game-row-full .muted{font-size:11px}
+  #game-detail-modal{padding:8px!important;align-items:center}
+  #game-detail-modal .gd-card{width:100%!important;max-width:100vw;max-height:94dvh!important;padding:15px 12px!important;border-radius:14px;overflow-x:hidden!important}
+  #game-detail-modal .gd-top{gap:10px;align-items:flex-start}
+  #game-detail-modal .gd-top>div{min-width:0;flex:1}
+  #game-detail-modal h2{font-size:clamp(18px,5.2vw,23px);line-height:1.2;overflow-wrap:anywhere}
+  #game-detail-modal .gd-sub{font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+  #game-detail-modal .gd-close{flex:0 0 auto;padding:7px 9px;font-size:12px}
+  #game-detail-modal .gd-score{font-size:25px;margin:12px 0}
+  #game-detail-modal #gd-content{width:100%;min-width:0}
+  #game-detail-modal .gd-table{display:table;width:100%!important;min-width:0!important;table-layout:fixed;font-size:12px}
+  #game-detail-modal .gd-table thead th{padding:9px 5px;font-size:10px;line-height:1.2;overflow-wrap:anywhere;word-break:normal}
+  #game-detail-modal .gd-table thead th:first-child{width:36%}
+  #game-detail-modal .gd-table thead th:nth-child(2),#game-detail-modal .gd-table thead th:nth-child(3){width:32%}
+  #game-detail-modal .gd-table th,#game-detail-modal .gd-table td{padding:9px 5px;white-space:normal;overflow-wrap:anywhere}
+  #game-detail-modal .gd-table td:first-child{text-align:left;font-size:11px}
+  #game-detail-modal .gd-table td:nth-child(2),#game-detail-modal .gd-table td:nth-child(3){text-align:center;font-variant-numeric:tabular-nums}
+  #game-detail-modal .gd-table .gd-team{display:block;width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center;font-size:10px;line-height:1.2}
+ }
+ @media(max-width:380px){
+  #game-detail-modal .gd-card{padding:12px 9px!important}
+  #game-detail-modal .gd-table{font-size:11px}
+  #game-detail-modal .gd-table thead th:first-child{width:34%}
+  #game-detail-modal .gd-table thead th:nth-child(2),#game-detail-modal .gd-table thead th:nth-child(3){width:33%}
+ }
+ `;
+ document.head.appendChild(style);
  const modal=document.createElement('div');modal.id='game-detail-modal';modal.innerHTML=`<div class="gd-card" role="dialog" aria-modal="true" aria-labelledby="gd-title"><div class="gd-top"><div><h2 id="gd-title">Estadísticas del partido</h2><div class="gd-sub" id="gd-sub"></div></div><button class="gd-close" type="button" data-gd-close>Cerrar ✕</button></div><div id="gd-content"></div></div>`;
  modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest('[data-gd-close]'))closeGameDetail();});
  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGameDetail();});
@@ -626,3 +668,132 @@ init();
 document.addEventListener('click', e=>{const th=e.target.closest('th[data-sort-table][data-sort-key]'); if(!th)return; const kind=th.dataset.sortTable,key=th.dataset.sortKey,state=tableSort[kind]; if(!state)return; if(state.key===key)state.dir=state.dir==='desc'?'asc':'desc';else{state.key=key;state.dir=kind==='defense'?'asc':'desc';} renderSortable(kind);});
 
 document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;background:none;color:inherit;font:inherit;font-weight:700;text-align:left;padding:0;cursor:pointer}.team-link:hover{color:#f0b323;text-decoration:underline}.team-link .muted{font-weight:600}</style>');
+
+
+
+/* GRIDIRON LAB — RESPONSIVE GLOBAL. Solo afecta pantallas de 700px o menos. */
+(function addGlobalMobileStyles(){
+ if(document.getElementById('gridiron-global-mobile-styles')) return;
+ const style=document.createElement('style');
+ style.id='gridiron-global-mobile-styles';
+ style.textContent=`
+ @media (max-width:700px){
+  html,body{max-width:100%;overflow-x:hidden}
+  body{font-size:13px;-webkit-text-size-adjust:100%}
+  .topbar{height:auto;min-height:58px;padding:10px 13px;gap:8px;flex-wrap:wrap}
+  .brand{font-size:15px;letter-spacing:1px;gap:8px;min-width:0}
+  .brand-mark{width:29px;height:29px;font-size:22px;flex:0 0 29px}
+  .season-chip{font-size:8px;letter-spacing:.5px;padding:6px 8px;max-width:48%;white-space:normal;text-align:center;line-height:1.25}
+  .shell{display:block;min-width:0;width:100%}
+  .sidebar{position:sticky;top:0;z-index:20;display:flex;flex-direction:row;overflow-x:auto;overflow-y:hidden;white-space:nowrap;gap:4px;padding:7px 8px;background:#0d151c;border-right:0;border-bottom:1px solid var(--line);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-item{flex:0 0 auto;white-space:nowrap;padding:9px 10px;font-size:10px;gap:6px;border-radius:6px}
+  .nav-item span{font-size:13px;width:auto}
+  .main{width:100%;max-width:none;min-width:0;margin:0;padding:19px 12px 16px}
+  .page-heading{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin-bottom:17px}
+  .page-heading>div:first-child{min-width:0}
+  .page-heading h1{font-size:34px;line-height:1.02;margin-bottom:7px;overflow-wrap:anywhere}
+  .page-heading .eyebrow{font-size:9px}
+  .subheading{font-size:11px;line-height:1.45;max-width:none}
+  .controls{width:100%;min-width:0}
+  .controls select{width:100%;min-height:42px}
+  .demo-banner{margin-bottom:18px;padding:10px 11px;font-size:10px;line-height:1.45}
+  .section-head{align-items:flex-start;gap:8px;margin-bottom:12px}
+  .section-head h2{font-size:25px;line-height:1.05}
+  .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+  .metric-card{min-width:0;min-height:104px;padding:12px 11px}
+  .metric-label{font-size:8px;letter-spacing:.6px;gap:4px;line-height:1.3}
+  .metric-label span{font-size:11px}
+  .metric-value{font-size:32px;margin:9px 0 4px;overflow-wrap:anywhere}
+  .metric-value small{font-size:10px}
+  .metric-foot{font-size:9px;line-height:1.35}
+  .content-grid{grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:10px}
+  .panel{min-width:0;padding:13px;border-radius:8px}
+  .panel-heading{gap:8px;margin-bottom:12px;align-items:flex-start}
+  .panel-heading h3{font-size:13px;line-height:1.25}
+  .panel-heading .eyebrow{font-size:8px;letter-spacing:1px}
+  .tag{font-size:8px;padding:4px 5px}
+  .chart-wrap{height:210px;max-width:100%;overflow:hidden}
+  .power-row{grid-template-columns:20px minmax(0,1fr) auto;gap:7px;padding:10px 0}
+  .team-id{gap:7px;min-width:0;font-size:11px}
+  .team-badge{width:24px;height:24px;flex:0 0 24px}
+  .power-score{font-size:17px}
+  .table-panel{padding:0;min-width:0}
+  .table-panel .panel-heading{padding:13px 12px 0}
+  .table-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  .table-scroll table{max-width:100%}
+  .table-scroll th,.table-scroll td{white-space:normal;overflow-wrap:anywhere;word-break:normal}
+  table{font-size:10px}
+  th{font-size:8px;padding:9px 7px;letter-spacing:.35px}
+  td{font-size:10px;padding:10px 7px}
+  .filter-row{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;margin-bottom:12px}
+  .filter-row label{display:block;width:100%;min-width:0;font-size:9px}
+  .filter-row input,.filter-row select{width:100%;min-width:0;max-width:100%;min-height:42px;padding:10px 11px;margin-top:6px;font-size:13px}
+  .filter-row>.muted{font-size:10px;line-height:1.4}
+  .playoff-grid{grid-template-columns:minmax(0,1fr);gap:10px}
+  .playoff-row{grid-template-columns:22px minmax(0,1fr) auto;gap:8px;padding:10px 0}
+  .playoff-row .team-id{min-width:0;overflow-wrap:anywhere}
+  .playoff-record{font-size:9px}
+  .playoff-disclaimer{font-size:10px;line-height:1.5}
+  footer{display:grid;grid-template-columns:1fr;gap:7px;padding:15px 0 5px;margin-top:20px;font-size:8px}
+  footer span:last-child{width:auto}
+  #view-overview .table-scroll table{min-width:0;width:100%;table-layout:fixed;white-space:normal}
+  #view-overview .table-scroll th,#view-overview .table-scroll td{padding:8px 5px;font-size:9px;white-space:normal;overflow-wrap:anywhere}
+  #view-ofensiva .table-scroll table,#view-defensiva .table-scroll table{min-width:0;width:100%;table-layout:fixed;white-space:normal}
+  #view-ofensiva .table-scroll th,#view-ofensiva .table-scroll td,
+  #view-defensiva .table-scroll th,#view-defensiva .table-scroll td{padding:8px 4px;font-size:8px;white-space:normal;overflow-wrap:anywhere}
+  #view-ofensiva .table-scroll th:nth-child(1),#view-ofensiva .table-scroll td:nth-child(1),
+  #view-defensiva .table-scroll th:nth-child(1),#view-defensiva .table-scroll td:nth-child(1){width:7%}
+  #view-ofensiva .table-scroll th:nth-child(2),#view-ofensiva .table-scroll td:nth-child(2),
+  #view-defensiva .table-scroll th:nth-child(2),#view-defensiva .table-scroll td:nth-child(2){width:28%;font-size:9px}
+  #view-tabla .table-scroll table{min-width:0;width:100%;table-layout:fixed;white-space:normal}
+  #view-tabla .table-scroll th,#view-tabla .table-scroll td{padding:8px 4px;font-size:9px;white-space:normal;overflow-wrap:anywhere}
+  #view-tabla .table-scroll th:nth-child(2),#view-tabla .table-scroll td:nth-child(2){width:34%}
+  /* Perfil individual del equipo */
+  #team-page-root{padding:12px 10px 28px!important;overflow-x:hidden!important}
+  #team-page-root .tp-wrap{width:100%;max-width:100%;min-width:0}
+  #team-page-root .tp-hero{margin:13px 0;padding:17px 14px;gap:12px}
+  #team-page-root h1{font-size:29px;line-height:1.05;overflow-wrap:anywhere}
+  #team-page-root .tp-hero-side{width:100%;justify-content:space-between;gap:10px}
+  #team-page-root .tp-standing-badges{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  #team-page-root .tp-standing-badges span{font-size:9px;padding:7px 6px;text-align:center}
+  #team-page-root .tp-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #team-page-root .tp-metric-layout{grid-template-columns:minmax(0,1fr);gap:8px}
+  #team-page-root .tp-primary-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #team-page-root .tp-side-metrics{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;gap:8px}
+  #team-page-root .tp-card{padding:11px 10px;min-width:0}
+  #team-page-root .tp-label{font-size:8px;line-height:1.3}
+  #team-page-root .tp-value{font-size:21px;overflow-wrap:anywhere}
+  #team-page-root .tp-sub{font-size:9px;line-height:1.35}
+  #team-page-root .tp-breakdown{gap:8px;align-items:center}
+  #team-page-root .tp-donut{width:52px;height:52px;flex-basis:52px}
+  #team-page-root .tp-donut:after{inset:8px}
+  #team-page-root .tp-donut-legend{font-size:9px;gap:4px;min-width:0}
+  #team-page-root .tp-league-compare{font-size:9px;line-height:1.35}
+  #team-page-root .tp-table-wrap{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+  #team-page-root .tp-table{min-width:560px}
+  /* Modal/ficha del partido: mantener tres columnas dentro del viewport. */
+  #game-detail-modal{padding:7px!important}
+  #game-detail-modal .gd-card{width:100%!important;max-width:100%!important;max-height:94dvh!important;padding:13px 10px!important;overflow-x:hidden!important}
+  #game-detail-modal .gd-top{gap:8px}
+  #game-detail-modal .gd-top>div{min-width:0;flex:1}
+  #game-detail-modal h2{font-size:clamp(17px,5vw,22px);line-height:1.2;overflow-wrap:anywhere}
+  #game-detail-modal .gd-sub{font-size:10px;line-height:1.35;overflow-wrap:anywhere}
+  #game-detail-modal .gd-close{padding:7px 8px;font-size:11px}
+  #game-detail-modal .gd-table{width:100%!important;min-width:0!important;table-layout:fixed;font-size:11px}
+  #game-detail-modal .gd-table th,#game-detail-modal .gd-table td{padding:8px 4px;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+  #game-detail-modal .gd-table th:first-child,#game-detail-modal .gd-table td:first-child{width:36%;font-size:10px}
+  #game-detail-modal .gd-table th:nth-child(2),#game-detail-modal .gd-table td:nth-child(2),
+  #game-detail-modal .gd-table th:nth-child(3),#game-detail-modal .gd-table td:nth-child(3){width:32%;text-align:center;font-variant-numeric:tabular-nums}
+  #game-detail-modal .gd-team{display:block;width:100%;font-size:9px;line-height:1.2;white-space:normal;overflow-wrap:anywhere;text-align:center}
+ }
+ @media(max-width:390px){
+  .main{padding-left:9px;padding-right:9px}
+  .metric-card{padding:10px 9px}
+  .metric-value{font-size:29px}
+  #team-page-root .tp-primary-metrics,#team-page-root .tp-side-metrics{grid-template-columns:minmax(0,1fr)}
+  #team-page-root .tp-breakdown{align-items:flex-start}
+  #team-page-root .tp-donut{width:46px;height:46px;flex-basis:46px}
+ }
+ `;
+ document.head.appendChild(style);
+})();
