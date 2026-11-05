@@ -271,3 +271,19 @@ td.sorted-column {
     margin-bottom: 11px;
   }
 }
+
+/* GRIDIRON LAB — ajuste aislado de navegación móvil */
+@media (max-width: 700px) {
+  .shell > .sidebar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  .shell > .sidebar::-webkit-scrollbar { display: none; }
+  .shell > .sidebar .nav-item { flex: 0 0 auto; }
+  #game-detail-modal { z-index: 20000 !important; }
+}

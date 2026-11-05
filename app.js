@@ -710,6 +710,13 @@ document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click'
  if(seasonSelect&&latest&&seasonSelect.value!==latest){seasonSelect.value=latest;loadSeason();}
  if(btn.dataset.view==='partidos') populateWeekFilter(true);
  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b===btn));
+ if(window.matchMedia('(max-width:700px)').matches){
+  const nav=btn.closest('.sidebar');
+  if(nav){
+   const left=btn.offsetLeft-nav.offsetLeft-(nav.clientWidth-btn.offsetWidth)/2;
+   nav.scrollTo({left:Math.max(0,left),behavior:'smooth'});
+  }
+ }
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+btn.dataset.view));
  const meta=views[btn.dataset.view]; if(meta){$('#page-title').textContent=meta[0];$('#page-subtitle').textContent=meta[1];}
 }));
@@ -1005,10 +1012,12 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
  style.textContent=`
  @media(max-width:700px){
   body{scroll-padding-top:calc(var(--gl-topbar-height,82px) + var(--gl-nav-height,52px))}
-  .topbar{position:sticky!important;top:0!important;z-index:10001!important;background:#fff!important}
-  .shell{padding-top:var(--gl-nav-height,52px)!important}
-  .shell>.sidebar{position:fixed!important;top:var(--gl-topbar-height,82px)!important;left:0!important;right:0!important;width:100%!important;max-width:100vw!important;z-index:10000!important;box-sizing:border-box!important;display:flex!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;gap:5px!important;padding:7px 10px!important;background:#fff!important;border:0!important;border-bottom:1px solid #d8dee5!important;box-shadow:0 3px 9px #14233418!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important}
+  /* Navegación móvil en el flujo; queda sticky al llegar al borde superior. */
+  .topbar{position:relative!important;top:auto!important;z-index:1!important;background:#fff!important}
+  .shell{padding-top:0!important}
+  .shell>.sidebar{position:sticky!important;top:0!important;left:auto!important;right:auto!important;width:100%!important;max-width:100vw!important;z-index:20!important;box-sizing:border-box!important;display:flex!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;gap:5px!important;padding:7px 10px!important;background:#fff!important;border:0!important;border-bottom:1px solid #d8dee5!important;box-shadow:0 3px 9px #14233418!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;scroll-behavior:smooth!important}
   .shell>.sidebar::-webkit-scrollbar{display:none!important}
+  #game-detail-modal{z-index:20000!important}
   .shell>.sidebar .nav-item{flex:0 0 auto!important;background:transparent!important;color:#596273!important;border:0!important;border-bottom:3px solid transparent!important;border-radius:4px 4px 0 0!important;box-shadow:none!important;padding:10px 12px 8px!important;font-size:12px!important;font-weight:700!important}
   .shell>.sidebar .nav-item span{color:inherit!important}
   .shell>.sidebar .nav-item.active{background:#fff!important;color:#d9272e!important;border-bottom-color:#d9272e!important;box-shadow:none!important}
