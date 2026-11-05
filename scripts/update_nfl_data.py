@@ -1,5 +1,6 @@
 import csv
 import datetime
+from decimal import Decimal, ROUND_HALF_EVEN
 import gzip
 import io
 import json
@@ -389,6 +390,11 @@ def main():
             d = max(0.0, min(2.375, 2.375 - (interceptions / attempts) * 25))
             return ((a + b + c + d) / 6) * 100
 
+        def nfl_rating_display(value):
+            # NFL.com resuelve empates exactos a una décima con redondeo al par:
+            # 92.25 -> 92.2. Evita que JavaScript/Python lo presenten como 92.3.
+            return float(Decimal(str(value)).quantize(Decimal('0.1'), rounding=ROUND_HALF_EVEN))
+
         for play in pbp:
             if str(play.get('season', '')) != str(season):
                 continue
@@ -553,10 +559,10 @@ def main():
             # Métricas complementarias calculadas sobre las jugadas de temporada regular.
             team['passPct'] = team['passComp'] / team['passAtt'] if team['passAtt'] else 0
             team['passAvg'] = team['passNet'] / team['passAtt'] if team['passAtt'] else 0
-            team['passerRating'] = passer_rating(
+            team['passerRating'] = nfl_rating_display(passer_rating(
                 team['passComp'], team['passAtt'], team['pass'],
                 team['passTD'], team['interceptions']
-            )
+            ))
             team['rushAvg'] = team['rush'] / team['rushAtt'] if team['rushAtt'] else 0
             team['receivingAvg'] = team['receiving'] / team['receptions'] if team['receptions'] else 0
             team['receivingPerGame'] = team['receiving'] / gp if gp else 0
@@ -565,10 +571,10 @@ def main():
 
             team['passPctAllowed'] = team['passCompAllowed'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
             team['passAvgAllowed'] = team['passAllowedNet'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
-            team['passerRatingAllowed'] = passer_rating(
+            team['passerRatingAllowed'] = nfl_rating_display(passer_rating(
                 team['passCompAllowed'], team['passAttAllowed'], team['passAllowed'],
                 team['passTDAllowed'], team['interceptionsMade']
-            )
+            ))
             team['rushAvgAllowed'] = team['rushAllowed'] / team['rushAttAllowed'] if team['rushAttAllowed'] else 0
             team['receivingAvgAllowed'] = team['receivingAllowed'] / team['receptionsAllowed'] if team['receptionsAllowed'] else 0
             team['receivingAllowedPerGame'] = team['receivingAllowed'] / gp if gp else 0
