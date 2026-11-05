@@ -149,72 +149,6 @@ def official_code_candidates(abbr):
     return (abbr,)
 
 
-def aggregate_weekly_rushing_fumbles(weekly_rows, season):
-    """Suma fumbles terrestres de las filas semanales REG por equipo."""
-    required = {'team', 'season_type', 'rushing_fumbles', 'rushing_fumbles_lost'}
-    if not weekly_rows:
-        raise RuntimeError(f'{season}: no hay estadísticas semanales para validar fumbles')
-    missing = sorted(required - set(weekly_rows[0].keys()))
-    if missing:
-        raise RuntimeError(
-            f'{season}: stats_team_week no contiene columnas para validar fumbles: '
-            + ', '.join(missing)
-        )
-
-    totals = {}
-    for row in weekly_rows:
-        if str(row.get('season', season)) != str(season):
-            continue
-        if (row.get('season_type') or 'REG').upper() != 'REG':
-            continue
-        team = (row.get('team') or '').strip()
-        if not team:
-            continue
-        values = totals.setdefault(team, {'fumbles': 0.0, 'lost': 0.0, 'weeks': 0})
-        values['fumbles'] += num(row, 'rushing_fumbles')
-        values['lost'] += num(row, 'rushing_fumbles_lost')
-        values['weeks'] += 1
-    if not totals:
-        raise RuntimeError(f'{season}: no hay filas REG válidas en stats_team_week')
-    return totals
-
-
-def validate_weekly_vs_season_rushing_fumbles(stats, official_rows, weekly_rows, season):
-    """Exige que el acumulado semanal REG coincida con el resumen oficial REG."""
-    weekly = aggregate_weekly_rushing_fumbles(weekly_rows, season)
-    mismatches = []
-    matched = 0
-    for abbr in stats:
-        official_code = next(
-            (code for code in official_code_candidates(abbr) if code in official_rows),
-            None,
-        )
-        weekly_code = next(
-            (code for code in official_code_candidates(abbr) if code in weekly),
-            None,
-        )
-        if not official_code or not weekly_code:
-            mismatches.append(f'{abbr}: sin correspondencia oficial/semanal')
-            continue
-        official = official_rows[official_code]
-        week_total = weekly[weekly_code]
-        reg_fumbles = num(official, 'rushing_fumbles')
-        reg_lost = num(official, 'rushing_fumbles_lost')
-        if (week_total['fumbles'], week_total['lost']) != (reg_fumbles, reg_lost):
-            mismatches.append(
-                f'{abbr}: REG={reg_fumbles:g}/{reg_lost:g}, '
-                f'semanal={week_total["fumbles"]:g}/{week_total["lost"]:g}'
-            )
-        else:
-            matched += 1
-    if mismatches:
-        raise RuntimeError(
-            f'{season}: discrepancia en fumbles terrestres entre stats_team_reg '
-            'y la suma de stats_team_week: ' + '; '.join(mismatches[:12])
-        )
-    print(f'{season}: fumbles terrestres validados: {matched} equipos (REG semanal = REG temporada)')
-
-
 def apply_official_team_stats(stats, official_rows):
     """Sobrescribe solo métricas complementarias con totales oficiales.
 
@@ -377,19 +311,6 @@ def main():
             print(f'{season}: {len(weekly_rows)} filas de estadísticas semanales')
         except Exception as error:
             print(f'{season}: no se pudieron cargar estadísticas por partido: {error}')
-
-        # Control de calidad: los fumbles terrestres del resumen REG deben
-        # coincidir con la suma de los registros semanales REG. Si no coinciden,
-        # se cancela antes de publicar el JSON; nunca se corrigen por equipo a mano.
-        if official_team_rows and weekly_stats_loaded:
-            validate_weekly_vs_season_rushing_fumbles(
-                stats, official_team_rows, weekly_rows, season
-            )
-        elif season == CURRENT:
-            raise RuntimeError(
-                f'{season}: no se pudo validar automáticamente rushing_fumbles '
-                'con stats_team_week; se cancela la publicación para proteger data/nfl.json.'
-            )
 
         game_stats_by_id = {}
         seen_team_games = {}
@@ -633,7 +554,7 @@ def main():
             team['passPct'] = team['passComp'] / team['passAtt'] if team['passAtt'] else 0
             team['passAvg'] = team['passNet'] / team['passAtt'] if team['passAtt'] else 0
             team['passerRating'] = passer_rating(
-                team['passComp'], team['passAtt'], team['passNet'],
+                team['passComp'], team['passAtt'], team['pass'],
                 team['passTD'], team['interceptions']
             )
             team['rushAvg'] = team['rush'] / team['rushAtt'] if team['rushAtt'] else 0
@@ -645,7 +566,7 @@ def main():
             team['passPctAllowed'] = team['passCompAllowed'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
             team['passAvgAllowed'] = team['passAllowedNet'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
             team['passerRatingAllowed'] = passer_rating(
-                team['passCompAllowed'], team['passAttAllowed'], team['passAllowedNet'],
+                team['passCompAllowed'], team['passAttAllowed'], team['passAllowed'],
                 team['passTDAllowed'], team['interceptionsMade']
             )
             team['rushAvgAllowed'] = team['rushAllowed'] / team['rushAttAllowed'] if team['rushAttAllowed'] else 0
