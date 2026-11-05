@@ -84,6 +84,94 @@ def new_team_stats(abbr):
     }
 
 
+def load_official_team_stats(season):
+    """Carga los totales REG oficiales por equipo de nflverse.
+
+    Este archivo es la fuente autoritativa para estadísticas de equipo como
+    recepciones, yardas recibidas, fumbles y penalizaciones. No se usa para
+    reemplazar los acumulados de pase/carrera/yardas base validados en V12.
+    """
+    url = f'{BASE}/stats_team/stats_team_reg_{season}.csv'
+    rows = read_csv(url)
+    if not rows:
+        raise RuntimeError(f'{season}: stats_team_reg descargó vacío')
+
+    required = {
+        'team', 'completions', 'attempts', 'passing_tds',
+        'passing_interceptions', 'carries', 'rushing_tds',
+        'rushing_fumbles', 'rushing_fumbles_lost', 'receptions',
+        'receiving_yards', 'receiving_tds', 'receiving_fumbles',
+        'receiving_fumbles_lost', 'penalties', 'penalty_yards',
+    }
+    missing = sorted(required - set(rows[0].keys()))
+    if missing:
+        raise RuntimeError(
+            f'{season}: stats_team_reg no contiene columnas requeridas: '
+            + ', '.join(missing)
+        )
+
+    by_team = {}
+    for row in rows:
+        abbr = (row.get('team') or '').strip()
+        if not abbr:
+            continue
+        if abbr in by_team:
+            raise RuntimeError(f'{season}: equipo duplicado en stats_team_reg: {abbr}')
+        by_team[abbr] = row
+    return by_team
+
+
+def player_fumbles_on_play(play, player_ids):
+    """Cuenta jugadores concretos que soltaron el balón en la jugada (máx. 2)."""
+    wanted = {str(value).strip() for value in player_ids if value not in ('', None, 'NA')}
+    if not wanted:
+        return 0
+    count = 0
+    for index in (1, 2):
+        fumbler = str(play.get(f'fumbled_{index}_player_id') or '').strip()
+        if fumbler and fumbler in wanted:
+            count += 1
+    return count
+
+
+def apply_official_team_stats(stats, official_rows):
+    """Sobrescribe solo métricas complementarias con totales oficiales.
+
+    Intencionalmente NO toca pass, rush, passNet, passAllowedNet,
+    sacks/sack yardage ni totalYards/yardsAllowed.
+    """
+    fields = {
+        'passComp': 'completions',
+        'passAtt': 'attempts',
+        'passTD': 'passing_tds',
+        'interceptions': 'passing_interceptions',
+        'rushAtt': 'carries',
+        'rushTD': 'rushing_tds',
+        'rushFumbles': 'rushing_fumbles',
+        'rushFumblesLost': 'rushing_fumbles_lost',
+        'receptions': 'receptions',
+        'receiving': 'receiving_yards',
+        'receivingTD': 'receiving_tds',
+        'receivingFumbles': 'receiving_fumbles',
+        'receivingFumblesLost': 'receiving_fumbles_lost',
+        'penalties': 'penalties',
+        'penaltyYards': 'penalty_yards',
+        # La tabla defensiva muestra las penalizaciones cometidas por ese equipo,
+        # no las penalizaciones cometidas por el rival.
+        'penaltiesAllowed': 'penalties',
+        'penaltyYardsAllowed': 'penalty_yards',
+    }
+    missing_teams = sorted(set(stats) - set(official_rows))
+    if missing_teams:
+        raise RuntimeError(
+            'Faltan equipos en stats_team_reg: ' + ', '.join(missing_teams)
+        )
+    for abbr, team in stats.items():
+        row = official_rows[abbr]
+        for target, source in fields.items():
+            team[target] = abs(num(row, source)) if source == 'penalty_yards' else num(row, source)
+
+
 def main():
     schedules = read_csv(f'{BASE}/schedules/games.csv')
     output = {
@@ -104,6 +192,20 @@ def main():
             if code
         })
         stats = {abbr: new_team_stats(abbr) for abbr in season_codes}
+
+        # Totales oficiales por equipo. Para la temporada vigente, si la fuente
+        # no está disponible o viene incompleta, se cancela antes de publicar JSON.
+        official_team_rows = {}
+        try:
+            official_team_rows = load_official_team_stats(season)
+            print(f'{season}: {len(official_team_rows)} equipos en stats_team_reg')
+        except Exception as error:
+            if season == CURRENT:
+                raise RuntimeError(
+                    f'{season}: no se pueden validar estadísticas complementarias; '
+                    'se cancela la publicación para proteger data/nfl.json.'
+                ) from error
+            print(f'{season}: stats_team_reg no disponible; se conserva cálculo PBP: {error}')
 
         cooked_games = []
         for game in all_games:
@@ -276,7 +378,7 @@ def main():
             rush_attempt = num(play, 'rush_attempt') == 1
             interception = num(play, 'interception') == 1
             pass_yards = num(play, 'passing_yards')
-            recv_yards = num(play, 'receiving_yards')
+            recv_yards = num(play, 'receiving_yards') + num(play, 'lateral_receiving_yards')
             run_yards = num(play, 'rushing_yards')
             pass_td = num(play, 'pass_touchdown')
             rush_td = num(play, 'rush_touchdown')
@@ -297,8 +399,9 @@ def main():
                     deff['interceptionsMade'] += 1
 
                 # Recepción atribuida al equipo receptor cuando existe receiver_player_id.
-                if play.get('receiver_player_id'):
-                    if completed_pass:
+                if play.get('receiver_player_id') or play.get('lateral_receiver_player_id'):
+                    if completed_pass and play.get('receiver_player_id'):
+                        # REC corresponde al receptor del pase, no a un lateral posterior.
                         off['receptions'] += 1
                         deff['receptionsAllowed'] += 1
                     off['receiving'] += recv_yards
@@ -307,12 +410,16 @@ def main():
                     deff['receivingLongAllowed'] = max(deff['receivingLongAllowed'], recv_yards)
                     off['receivingTD'] += pass_td
                     deff['receivingTDAllowed'] += pass_td
-                    if num(play, 'fumble') == 1:
-                        off['receivingFumbles'] += 1
-                        deff['receivingFumblesAllowed'] += 1
-                    if num(play, 'fumble_lost') == 1:
-                        off['receivingFumblesLost'] += 1
-                        deff['receivingFumblesLostAllowed'] += 1
+                    receiver_fumbles = player_fumbles_on_play(
+                        play,
+                        (play.get('receiver_player_id'), play.get('lateral_receiver_player_id'))
+                    )
+                    if receiver_fumbles:
+                        off['receivingFumbles'] += receiver_fumbles
+                        deff['receivingFumblesAllowed'] += receiver_fumbles
+                        if num(play, 'fumble_lost') == 1:
+                            off['receivingFumblesLost'] += 1
+                            deff['receivingFumblesLostAllowed'] += 1
 
             # Acarreos.
             if rush_attempt:
@@ -322,12 +429,16 @@ def main():
                 deff['rushLongAllowed'] = max(deff['rushLongAllowed'], run_yards)
                 off['rushTD'] += rush_td
                 deff['rushTDAllowed'] += rush_td
-                if num(play, 'fumble') == 1:
-                    off['rushFumbles'] += 1
-                    deff['rushFumblesAllowed'] += 1
-                if num(play, 'fumble_lost') == 1:
-                    off['rushFumblesLost'] += 1
-                    deff['rushFumblesLostAllowed'] += 1
+                rush_fumbles = player_fumbles_on_play(
+                    play,
+                    (play.get('rusher_player_id'), play.get('lateral_rusher_player_id'))
+                )
+                if rush_fumbles:
+                    off['rushFumbles'] += rush_fumbles
+                    deff['rushFumblesAllowed'] += rush_fumbles
+                    if num(play, 'fumble_lost') == 1:
+                        off['rushFumblesLost'] += 1
+                        deff['rushFumblesLostAllowed'] += 1
 
             # Primeros downs y conversiones situacionales.
             fd_rush = num(play, 'first_down_rush')
@@ -396,6 +507,11 @@ def main():
                 stats[offense]['successPlays'] += 1
             if num(play, 'interception') == 1 or num(play, 'fumble_lost') == 1:
                 stats[offense]['turnovers'] += 1
+
+        # Aplicar fuente oficial solo a estadísticas complementarias. Los campos
+        # base de yardas validados previamente permanecen exactamente como estaban.
+        if official_team_rows:
+            apply_official_team_stats(stats, official_team_rows)
 
         teams = []
         for team in stats.values():
