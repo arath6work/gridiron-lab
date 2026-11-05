@@ -16,7 +16,7 @@ TEAM_INFO = {
  'CAR':('Carolina Panthers','NFC','NFC South'),'CHI':('Chicago Bears','NFC','NFC North'),'CIN':('Cincinnati Bengals','AFC','AFC North'),'CLE':('Cleveland Browns','AFC','AFC North'),
  'DAL':('Dallas Cowboys','NFC','NFC East'),'DEN':('Denver Broncos','AFC','AFC West'),'DET':('Detroit Lions','NFC','NFC North'),'GB':('Green Bay Packers','NFC','NFC North'),
  'HOU':('Houston Texans','AFC','AFC South'),'IND':('Indianapolis Colts','AFC','AFC South'),'JAX':('Jacksonville Jaguars','AFC','AFC South'),'KC':('Kansas City Chiefs','AFC','AFC West'),
- 'LA':('Los Angeles Rams','NFC','NFC West'),'LAR':('Los Angeles Rams','NFC','NFC West'),'STL':('St. Louis Rams','NFC','NFC West'),'LAC':('Los Angeles Chargers','AFC','AFC West'),'SD':('San Diego Chargers','AFC','AFC West'),'LV':('Las Vegas Raiders','AFC','AFC West'),'OAK':('Oakland Raiders','AFC','AFC West'),'MIA':('Miami Dolphins','AFC','AFC East'),
+ 'LA':('Los Angeles Rams','NFC','NFC West'),'LAR':('Los Angeles Rams','NFC','NFC West'),'STL':('St. Louis Rams','NFC','NFC West'),'LAC':('Los Angeles Chargers','AFC','AFC West'),'SD':('San Diego Chargers','AFC','AFC West'),'LV':('Las Vegas Raiders','AFC','AFC West'),'OAK':('Oakland Raiders','AFC','AFC West'),'OK':('Oakland Raiders','AFC','AFC West'),'MIA':('Miami Dolphins','AFC','AFC East'),
  'MIN':('Minnesota Vikings','NFC','NFC North'),'NE':('New England Patriots','AFC','AFC East'),'NO':('New Orleans Saints','NFC','NFC South'),'NYG':('New York Giants','NFC','NFC East'),
  'NYJ':('New York Jets','AFC','AFC East'),'PHI':('Philadelphia Eagles','NFC','NFC East'),'PIT':('Pittsburgh Steelers','AFC','AFC North'),'SF':('San Francisco 49ers','NFC','NFC West'),
  'SEA':('Seattle Seahawks','NFC','NFC West'),'TB':('Tampa Bay Buccaneers','NFC','NFC South'),'TEN':('Tennessee Titans','AFC','AFC South'),'WAS':('Washington Commanders','NFC','NFC East'),'WSH':('Washington Commanders','NFC','NFC East')
@@ -134,12 +134,49 @@ def player_fumbles_on_play(play, player_ids):
     return count
 
 
+def official_code_candidates(abbr):
+    """Códigos alternativos de una misma franquicia a través de la historia."""
+    alias_groups = (
+        ('OK', 'OAK', 'LV'),
+        ('SD', 'LAC'),
+        ('STL', 'LA', 'LAR'),
+        ('WSH', 'WAS'),
+    )
+    for group in alias_groups:
+        if abbr in group:
+            # Preferir primero el código exacto y luego sus equivalentes.
+            return (abbr,) + tuple(code for code in group if code != abbr)
+    return (abbr,)
+
+
 def apply_official_team_stats(stats, official_rows):
     """Sobrescribe solo métricas complementarias con totales oficiales.
 
+    Resuelve códigos históricos distintos entre schedules y stats_team_reg.
     Intencionalmente NO toca pass, rush, passNet, passAllowedNet,
     sacks/sack yardage ni totalYards/yardsAllowed.
     """
+    official_by_schedule_code = {}
+    used_official_codes = set()
+    missing_teams = []
+    for abbr in stats:
+        match = next(
+            (code for code in official_code_candidates(abbr)
+             if code in official_rows and code not in used_official_codes),
+            None
+        )
+        if match is None:
+            missing_teams.append(abbr)
+        else:
+            official_by_schedule_code[abbr] = official_rows[match]
+            used_official_codes.add(match)
+
+    if missing_teams:
+        raise RuntimeError(
+            'Faltan equipos en stats_team_reg después de normalizar códigos: '
+            + ', '.join(sorted(missing_teams))
+        )
+
     fields = {
         'passComp': 'completions',
         'passAtt': 'attempts',
@@ -161,14 +198,9 @@ def apply_official_team_stats(stats, official_rows):
         'penaltiesAllowed': 'penalties',
         'penaltyYardsAllowed': 'penalty_yards',
     }
-    missing_teams = sorted(set(stats) - set(official_rows))
-    if missing_teams:
-        raise RuntimeError(
-            'Faltan equipos en stats_team_reg: ' + ', '.join(missing_teams)
-        )
     for abbr, team in stats.items():
-        row = official_rows[abbr]
-        for target, source in fields.items():
+        row = official_by_schedule_code[abbr]
+        for target, source in fields.items(): 
             team[target] = abs(num(row, source)) if source == 'penalty_yards' else num(row, source)
 
 
