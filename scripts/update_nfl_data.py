@@ -55,6 +55,31 @@ def new_team_stats(abbr):
         'pass': 0, 'rush': 0, 'passAllowed': 0, 'rushAllowed': 0,
         'sackYardsAllowed': 0, 'sacksMadeYards': 0,
         'sacksAllowed': 0, 'sacksMade': 0,
+        # Producción ofensiva complementaria (PBP).
+        'passComp': 0, 'passAtt': 0, 'passPct': 0, 'passAvg': 0, 'passLong': 0,
+        'passTD': 0, 'interceptions': 0, 'passerRating': 0,
+        'rushAtt': 0, 'rushAvg': 0, 'rushLong': 0, 'rushTD': 0,
+        'rushFumbles': 0, 'rushFumblesLost': 0,
+        'receptions': 0, 'receiving': 0, 'receivingAvg': 0, 'receivingPerGame': 0,
+        'receivingLong': 0, 'receivingTD': 0, 'receivingFumbles': 0, 'receivingFumblesLost': 0,
+        'firstDowns': 0, 'firstDownRush': 0, 'firstDownPass': 0, 'firstDownPenalty': 0,
+        'thirdDownAtt': 0, 'thirdDownConv': 0, 'thirdDownRate': 0,
+        'fourthDownAtt': 0, 'fourthDownConv': 0, 'fourthDownRate': 0,
+        'penalties': 0, 'penaltyYards': 0,
+        # Producción permitida / defensa.
+        'passCompAllowed': 0, 'passAttAllowed': 0, 'passPctAllowed': 0,
+        'passAvgAllowed': 0, 'passLongAllowed': 0, 'passTDAllowed': 0,
+        'interceptionsMade': 0, 'passerRatingAllowed': 0,
+        'rushAttAllowed': 0, 'rushAvgAllowed': 0, 'rushLongAllowed': 0,
+        'rushTDAllowed': 0, 'rushFumblesAllowed': 0, 'rushFumblesLostAllowed': 0,
+        'receptionsAllowed': 0, 'receivingAllowed': 0, 'receivingAvgAllowed': 0,
+        'receivingAllowedPerGame': 0, 'receivingLongAllowed': 0, 'receivingTDAllowed': 0,
+        'receivingFumblesAllowed': 0, 'receivingFumblesLostAllowed': 0,
+        'firstDownsAllowed': 0, 'firstDownRushAllowed': 0,
+        'firstDownPassAllowed': 0, 'firstDownPenaltyAllowed': 0,
+        'thirdDownAttAllowed': 0, 'thirdDownConvAllowed': 0, 'thirdDownRateAllowed': 0,
+        'fourthDownAttAllowed': 0, 'fourthDownConvAllowed': 0, 'fourthDownRateAllowed': 0,
+        'penaltiesAllowed': 0, 'penaltyYardsAllowed': 0,
         'epa': 0, 'plays': 0, 'successPlays': 0, 'epaPlays': 0, 'turnovers': 0,
     }
 
@@ -221,6 +246,15 @@ def main():
             game['awayStats'] = per_team.get(game['away'])
             game['homeStats'] = per_team.get(game['home'])
 
+        def passer_rating(completions, attempts, yards, touchdowns, interceptions):
+            if attempts <= 0:
+                return 0.0
+            a = max(0.0, min(2.375, ((completions / attempts) - 0.3) * 5))
+            b = max(0.0, min(2.375, ((yards / attempts) - 3) * 0.25))
+            c = max(0.0, min(2.375, (touchdowns / attempts) * 20))
+            d = max(0.0, min(2.375, 2.375 - (interceptions / attempts) * 25))
+            return ((a + b + c + d) / 6) * 100
+
         for play in pbp:
             if str(play.get('season', '')) != str(season):
                 continue
@@ -232,6 +266,105 @@ def main():
             defense = play.get('defteam', '')
             if offense not in stats or defense not in stats:
                 continue
+
+            off = stats[offense]
+            deff = stats[defense]
+            down = int(num(play, 'down')) if num(play, 'down') in (1, 2, 3, 4) else 0
+            pass_attempt = num(play, 'pass_attempt') == 1
+            sack_play = num(play, 'sack') == 1
+            completed_pass = num(play, 'complete_pass') == 1
+            rush_attempt = num(play, 'rush_attempt') == 1
+            interception = num(play, 'interception') == 1
+            pass_yards = num(play, 'passing_yards')
+            recv_yards = num(play, 'receiving_yards')
+            run_yards = num(play, 'rushing_yards')
+            pass_td = num(play, 'pass_touchdown')
+            rush_td = num(play, 'rush_touchdown')
+
+            # Pases: ATT oficial excluye sacks; los sacks se cuentan por separado.
+            if pass_attempt and not sack_play:
+                off['passAtt'] += 1
+                deff['passAttAllowed'] += 1
+                if completed_pass:
+                    off['passComp'] += 1
+                    deff['passCompAllowed'] += 1
+                off['passLong'] = max(off['passLong'], pass_yards)
+                deff['passLongAllowed'] = max(deff['passLongAllowed'], pass_yards)
+                off['passTD'] += pass_td
+                deff['passTDAllowed'] += pass_td
+                if interception:
+                    off['interceptions'] += 1
+                    deff['interceptionsMade'] += 1
+
+                # Recepción atribuida al equipo receptor cuando existe receiver_player_id.
+                if play.get('receiver_player_id'):
+                    if completed_pass:
+                        off['receptions'] += 1
+                        deff['receptionsAllowed'] += 1
+                    off['receiving'] += recv_yards
+                    deff['receivingAllowed'] += recv_yards
+                    off['receivingLong'] = max(off['receivingLong'], recv_yards)
+                    deff['receivingLongAllowed'] = max(deff['receivingLongAllowed'], recv_yards)
+                    off['receivingTD'] += pass_td
+                    deff['receivingTDAllowed'] += pass_td
+                    if num(play, 'fumble') == 1:
+                        off['receivingFumbles'] += 1
+                        deff['receivingFumblesAllowed'] += 1
+                    if num(play, 'fumble_lost') == 1:
+                        off['receivingFumblesLost'] += 1
+                        deff['receivingFumblesLostAllowed'] += 1
+
+            # Acarreos.
+            if rush_attempt:
+                off['rushAtt'] += 1
+                deff['rushAttAllowed'] += 1
+                off['rushLong'] = max(off['rushLong'], run_yards)
+                deff['rushLongAllowed'] = max(deff['rushLongAllowed'], run_yards)
+                off['rushTD'] += rush_td
+                deff['rushTDAllowed'] += rush_td
+                if num(play, 'fumble') == 1:
+                    off['rushFumbles'] += 1
+                    deff['rushFumblesAllowed'] += 1
+                if num(play, 'fumble_lost') == 1:
+                    off['rushFumblesLost'] += 1
+                    deff['rushFumblesLostAllowed'] += 1
+
+            # Primeros downs y conversiones situacionales.
+            fd_rush = num(play, 'first_down_rush')
+            fd_pass = num(play, 'first_down_pass')
+            fd_penalty = num(play, 'first_down_penalty')
+            off['firstDownRush'] += fd_rush
+            off['firstDownPass'] += fd_pass
+            off['firstDownPenalty'] += fd_penalty
+            deff['firstDownRushAllowed'] += fd_rush
+            deff['firstDownPassAllowed'] += fd_pass
+            deff['firstDownPenaltyAllowed'] += fd_penalty
+            off['firstDowns'] += fd_rush + fd_pass + fd_penalty
+            deff['firstDownsAllowed'] += fd_rush + fd_pass + fd_penalty
+
+            if down == 3 and (pass_attempt or rush_attempt):
+                off['thirdDownAtt'] += 1
+                deff['thirdDownAttAllowed'] += 1
+                if num(play, 'third_down_converted') == 1:
+                    off['thirdDownConv'] += 1
+                    deff['thirdDownConvAllowed'] += 1
+            if down == 4 and (pass_attempt or rush_attempt):
+                off['fourthDownAtt'] += 1
+                deff['fourthDownAttAllowed'] += 1
+                if num(play, 'fourth_down_converted') == 1:
+                    off['fourthDownConv'] += 1
+                    deff['fourthDownConvAllowed'] += 1
+
+            # Penalizaciones: se acreditan al equipo señalado por nflverse.
+            if num(play, 'penalty') == 1:
+                penalty_team = play.get('penalty_team') or ''
+                penalty_yards = abs(num(play, 'penalty_yards'))
+                if penalty_team == offense:
+                    off['penalties'] += 1
+                    off['penaltyYards'] += penalty_yards
+                elif penalty_team == defense:
+                    deff['penaltiesAllowed'] += 1
+                    deff['penaltyYardsAllowed'] += penalty_yards
 
             play_type = play.get('play_type')
             if play_type not in ('pass', 'run') and num(play, 'pass_attempt') == 0 and num(play, 'rush_attempt') == 0:
@@ -269,6 +402,31 @@ def main():
             gp = team['gp']
             team['passNet'] = team['pass'] - team['sackYardsAllowed']
             team['passAllowedNet'] = team['passAllowed'] - team['sacksMadeYards']
+            # Métricas complementarias calculadas sobre las jugadas de temporada regular.
+            team['passPct'] = team['passComp'] / team['passAtt'] if team['passAtt'] else 0
+            team['passAvg'] = team['passNet'] / team['passAtt'] if team['passAtt'] else 0
+            team['passerRating'] = passer_rating(
+                team['passComp'], team['passAtt'], team['passNet'],
+                team['passTD'], team['interceptions']
+            )
+            team['rushAvg'] = team['rush'] / team['rushAtt'] if team['rushAtt'] else 0
+            team['receivingAvg'] = team['receiving'] / team['receptions'] if team['receptions'] else 0
+            team['receivingPerGame'] = team['receiving'] / gp if gp else 0
+            team['thirdDownRate'] = team['thirdDownConv'] / team['thirdDownAtt'] if team['thirdDownAtt'] else 0
+            team['fourthDownRate'] = team['fourthDownConv'] / team['fourthDownAtt'] if team['fourthDownAtt'] else 0
+
+            team['passPctAllowed'] = team['passCompAllowed'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
+            team['passAvgAllowed'] = team['passAllowedNet'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
+            team['passerRatingAllowed'] = passer_rating(
+                team['passCompAllowed'], team['passAttAllowed'], team['passAllowedNet'],
+                team['passTDAllowed'], team['interceptionsMade']
+            )
+            team['rushAvgAllowed'] = team['rushAllowed'] / team['rushAttAllowed'] if team['rushAttAllowed'] else 0
+            team['receivingAvgAllowed'] = team['receivingAllowed'] / team['receptionsAllowed'] if team['receptionsAllowed'] else 0
+            team['receivingAllowedPerGame'] = team['receivingAllowed'] / gp if gp else 0
+            team['thirdDownRateAllowed'] = team['thirdDownConvAllowed'] / team['thirdDownAttAllowed'] if team['thirdDownAttAllowed'] else 0
+            team['fourthDownRateAllowed'] = team['fourthDownConvAllowed'] / team['fourthDownAttAllowed'] if team['fourthDownAttAllowed'] else 0
+
             team['totalYards'] = team['passNet'] + team['rush']
             team['yardsAllowed'] = team['passAllowedNet'] + team['rushAllowed']
             team['pct'] = (team['w'] + 0.5 * team['t']) / gp if gp else 0
