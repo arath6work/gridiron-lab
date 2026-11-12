@@ -552,13 +552,70 @@ def main():
                 ),
             }
 
-        for game in cooked_games:
-            per_team = game_stats_by_id.get(
-                ((game.get('gameType') or 'REG').upper(), str(game.get('gameId') or '')),
-                {}
+        # Estadísticas situacionales por partido calculadas desde PBP.
+        # Este bloque alimenta EXCLUSIVAMENTE awayStats/homeStats de la ficha
+        # individual. No modifica los acumulados de temporada en `stats`.
+        game_pbp_stats = {}
+        for play in pbp:
+            if str(play.get('season', '')) != str(season):
+                continue
+            game_id = str(play.get('game_id') or '').strip()
+            game_type = (play.get('game_type') or 'REG').upper()
+            offense = (play.get('posteam') or '').strip()
+            if not game_id or offense not in stats:
+                continue
+
+            key = (game_type, game_id, offense)
+            per_game = game_pbp_stats.setdefault(key, {
+                'firstDowns': 0,
+                'thirdDownAtt': 0, 'thirdDownConv': 0,
+                'fourthDownAtt': 0, 'fourthDownConv': 0,
+                'plays': 0, 'epa': 0.0,
+            })
+
+            per_game['firstDowns'] += (
+                num(play, 'first_down_rush')
+                + num(play, 'first_down_pass')
+                + num(play, 'first_down_penalty')
             )
-            game['awayStats'] = per_team.get(game['away'])
-            game['homeStats'] = per_team.get(game['home'])
+
+            down = int(num(play, 'down')) if num(play, 'down') in (1, 2, 3, 4) else 0
+            pass_attempt = num(play, 'pass_attempt') == 1
+            rush_attempt = num(play, 'rush_attempt') == 1
+            if down == 3 and (pass_attempt or rush_attempt):
+                per_game['thirdDownAtt'] += 1
+                if num(play, 'third_down_converted') == 1:
+                    per_game['thirdDownConv'] += 1
+            if down == 4 and (pass_attempt or rush_attempt):
+                per_game['fourthDownAtt'] += 1
+                if num(play, 'fourth_down_converted') == 1:
+                    per_game['fourthDownConv'] += 1
+
+            play_type = play.get('play_type')
+            if play_type in ('pass', 'run') or pass_attempt or rush_attempt:
+                per_game['plays'] += 1
+                epa_value = play.get('epa', '')
+                if epa_value not in ('', None, 'NA', 'nan', 'NaN'):
+                    per_game['epa'] += num(play, 'epa')
+
+        for game in cooked_games:
+            game_key = (
+                (game.get('gameType') or 'REG').upper(),
+                str(game.get('gameId') or '')
+            )
+            weekly_by_team = game_stats_by_id.get(game_key, {})
+            per_team = {}
+            for abbr in (game['away'], game['home']):
+                # Copia los valores semanales existentes y sustituye solo los
+                # campos situacionales que el PBP permite calcular por partido.
+                team_game_stats = dict(weekly_by_team.get(abbr) or {})
+                pbp_values = game_pbp_stats.get((game_key[0], game_key[1], abbr))
+                if pbp_values is not None:
+                    team_game_stats.update(pbp_values)
+                per_team[abbr] = team_game_stats or None
+
+            game['awayStats'] = per_team[game['away']]
+            game['homeStats'] = per_team[game['home']]
 
         def passer_rating(completions, attempts, yards, touchdowns, interceptions):
             if attempts <= 0:
