@@ -1337,6 +1337,55 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
       flex:0 0 24px!important;margin:0!important;object-fit:contain!important;
     }
    }
+
+   /* Ajustes exclusivos de escritorio: fichas, nombres y ancho natural de tablas. */
+   @media(min-width:701px){
+    /* Ficha del partido: Estadística a la izquierda; las dos columnas de equipos centradas. */
+    #game-detail-modal .gd-table th:first-child,
+    #game-detail-modal .gd-table td:first-child{text-align:left!important}
+    #game-detail-modal .gd-table th:nth-child(2),
+    #game-detail-modal .gd-table th:nth-child(3),
+    #game-detail-modal .gd-table td:nth-child(2),
+    #game-detail-modal .gd-table td:nth-child(3){text-align:center!important}
+    #game-detail-modal .gd-table thead th:nth-child(2) .gd-team,
+    #game-detail-modal .gd-table thead th:nth-child(3) .gd-team{
+      display:flex!important;align-items:center!important;justify-content:center!important;
+      gap:8px!important;width:100%!important;text-align:center!important;
+    }
+
+    /* Ocultar abreviaturas redundantes cuando ya se muestra el nombre completo. */
+    #view-estadisticas .team-link .muted,
+    #view-tabla .team-link .muted,
+    #afc-playoffs .playoff-abbr,
+    #nfc-playoffs .playoff-abbr{display:none!important}
+
+    /* Tablas con ancho natural: sin repartir el espacio sobrante en la columna EQUIPO. */
+    #view-estadisticas .table-scroll,
+    #view-tabla .table-scroll{
+      width:fit-content!important;max-width:100%!important;
+      overflow-x:auto!important;
+    }
+    #view-estadisticas .table-scroll table,
+    #view-tabla .table-scroll table{
+      width:max-content!important;min-width:0!important;max-width:none!important;
+      table-layout:auto!important;
+    }
+    #view-estadisticas .table-scroll th:nth-child(2),
+    #view-estadisticas .table-scroll td:nth-child(2),
+    #view-tabla .table-scroll th:nth-child(2),
+    #view-tabla .table-scroll td:nth-child(2){
+      width:170px!important;min-width:170px!important;max-width:190px!important;
+    }
+    #view-estadisticas .table-scroll td:nth-child(2) .team-link,
+    #view-tabla .table-scroll td:nth-child(2) .team-link{
+      gap:8px!important;white-space:nowrap!important;
+    }
+    #view-estadisticas .table-scroll td:nth-child(2) .team-logo,
+    #view-tabla .table-scroll td:nth-child(2) .team-logo{
+      width:24px!important;height:24px!important;min-width:24px!important;
+      flex:0 0 24px!important;margin:0!important;
+    }
+   }
   `;
   document.head.appendChild(teamMobile);
  }
