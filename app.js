@@ -1338,9 +1338,9 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
     }
    }
 
-   /* Ajustes exclusivos de escritorio: fichas, nombres y ancho natural de tablas. */
+   /* Ajustes exclusivos de escritorio: tablas proporcionadas y legibles. */
    @media(min-width:701px){
-    /* Ficha del partido: Estadística a la izquierda; las dos columnas de equipos centradas. */
+    /* Ficha del partido: Estadística a la izquierda; equipos y sus valores centrados. */
     #game-detail-modal .gd-table th:first-child,
     #game-detail-modal .gd-table td:first-child{text-align:left!important}
     #game-detail-modal .gd-table th:nth-child(2),
@@ -1353,37 +1353,58 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
       gap:8px!important;width:100%!important;text-align:center!important;
     }
 
-    /* Ocultar abreviaturas redundantes cuando ya se muestra el nombre completo. */
+    /* Nombres completos, sin abreviaturas duplicadas. */
     #view-estadisticas .team-link .muted,
     #view-tabla .team-link .muted,
     #afc-playoffs .playoff-abbr,
     #nfc-playoffs .playoff-abbr{display:none!important}
 
-    /* Tablas con ancho natural: sin repartir el espacio sobrante en la columna EQUIPO. */
+    /* Ancho controlado: aprovecha el espacio sin ocupar toda la pantalla. */
     #view-estadisticas .table-scroll,
     #view-tabla .table-scroll{
-      width:fit-content!important;max-width:100%!important;
-      overflow-x:auto!important;
+      width:min(100%,1280px)!important;max-width:1280px!important;
+      margin:0 auto!important;overflow-x:auto!important;
     }
     #view-estadisticas .table-scroll table,
     #view-tabla .table-scroll table{
-      width:max-content!important;min-width:0!important;max-width:none!important;
-      table-layout:auto!important;
+      width:100%!important;min-width:1040px!important;max-width:1280px!important;
+      table-layout:fixed!important;
     }
+
+    /* Equipo compacto, pero con aire suficiente para logo y nombre. */
+    #view-estadisticas .table-scroll th:nth-child(1),
+    #view-tabla .table-scroll th:nth-child(1),
+    #view-estadisticas .table-scroll td:nth-child(1),
+    #view-tabla .table-scroll td:nth-child(1){width:44px!important}
     #view-estadisticas .table-scroll th:nth-child(2),
     #view-estadisticas .table-scroll td:nth-child(2),
     #view-tabla .table-scroll th:nth-child(2),
-    #view-tabla .table-scroll td:nth-child(2){
-      width:170px!important;min-width:170px!important;max-width:190px!important;
+    #view-tabla .table-scroll td:nth-child(2){width:205px!important}
+    #view-tabla .table-scroll th:nth-child(3),
+    #view-tabla .table-scroll td:nth-child(3){width:145px!important}
+
+    #view-estadisticas .table-scroll th,
+    #view-estadisticas .table-scroll td,
+    #view-tabla .table-scroll th,
+    #view-tabla .table-scroll td{
+      padding:12px 10px!important;white-space:nowrap!important;
+      vertical-align:middle!important;
     }
+    #view-estadisticas .table-scroll th:not(:nth-child(2)),
+    #view-estadisticas .table-scroll td:not(:nth-child(2)),
+    #view-tabla .table-scroll th:not(:nth-child(2)),
+    #view-tabla .table-scroll td:not(:nth-child(2)){text-align:center!important}
+    #view-estadisticas .table-scroll td:nth-child(2),
+    #view-tabla .table-scroll td:nth-child(2){text-align:left!important}
     #view-estadisticas .table-scroll td:nth-child(2) .team-link,
     #view-tabla .table-scroll td:nth-child(2) .team-link{
-      gap:8px!important;white-space:nowrap!important;
+      display:inline-flex!important;align-items:center!important;gap:8px!important;
+      white-space:nowrap!important;
     }
     #view-estadisticas .table-scroll td:nth-child(2) .team-logo,
     #view-tabla .table-scroll td:nth-child(2) .team-logo{
-      width:24px!important;height:24px!important;min-width:24px!important;
-      flex:0 0 24px!important;margin:0!important;
+      width:25px!important;height:25px!important;min-width:25px!important;
+      flex:0 0 25px!important;margin:0!important;
     }
    }
   `;
