@@ -1531,6 +1531,64 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
      }
    }
 
+
+   /* Intercambio de alturas: encabezado alto y filas de equipos compactas.
+      Exclusivo de escritorio; no afecta Partidos, Playoff Picture ni móvil. */
+   @media (min-width:701px){
+     #view-estadisticas .table-scroll thead th,
+     #view-tabla .table-scroll thead th{
+       height:42px!important;
+       padding:12px 7px!important;
+       font-size:10px!important;
+       line-height:1.1!important;
+       vertical-align:middle!important;
+       white-space:nowrap!important;
+     }
+
+     #view-estadisticas .table-scroll tbody tr:not(.standings-group-row) td,
+     #view-tabla .table-scroll tbody tr:not(.standings-group-row) td{
+       height:27px!important;
+       min-height:27px!important;
+       padding:3px 7px!important;
+       font-size:11px!important;
+       line-height:1.05!important;
+       vertical-align:middle!important;
+       box-sizing:border-box!important;
+     }
+
+     #view-estadisticas .table-scroll tbody tr:not(.standings-group-row) .team-link,
+     #view-tabla .table-scroll tbody tr:not(.standings-group-row) .team-link{
+       display:inline-flex!important;
+       align-items:center!important;
+       gap:5px!important;
+       font-size:11px!important;
+       line-height:1.05!important;
+       white-space:nowrap!important;
+     }
+
+     #view-estadisticas .table-scroll tbody tr:not(.standings-group-row) .team-logo,
+     #view-tabla .table-scroll tbody tr:not(.standings-group-row) .team-logo{
+       width:17px!important;
+       height:17px!important;
+       min-width:17px!important;
+       min-height:17px!important;
+       flex:0 0 17px!important;
+       margin:0!important;
+       object-fit:contain!important;
+     }
+
+     #view-estadisticas .table-scroll tbody tr:not(.standings-group-row) td:nth-child(1),
+     #view-tabla .table-scroll tbody tr:not(.standings-group-row) td:nth-child(1){
+       font-size:10px!important;
+     }
+
+     #view-tabla .table-scroll tbody tr.standings-group-row td{
+       height:auto!important;
+       padding:5px 8px!important;
+       font-size:10px!important;
+     }
+   }
+
   `;
   document.head.appendChild(teamMobile);
  }
