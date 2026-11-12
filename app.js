@@ -660,7 +660,7 @@ function renderPlayoffs(){
    if(i<4)status='Campeón divisional';
    else if(i<7)status='En zona de Wild Card';
    else status='Fuera de zona · En la pelea';
-   return `<div class="playoff-row"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div>${t.name}<div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
+   return `<div class="playoff-row"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div class="playoff-team-copy">${t.name}<span class="playoff-abbr">${t.abbr}</span><div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
   }).join('');
   $('#'+conf.toLowerCase()+'-playoffs').innerHTML=html||'<p class="muted">Sin datos disponibles.</p>';
  }
@@ -818,8 +818,94 @@ async function init(){
       display:inline-block!important;visibility:visible!important;opacity:1!important;
       object-fit:contain!important;vertical-align:middle!important;
     }
-    .team-badge{background:transparent!important;box-shadow:none!important;border:0!important}
-    .team-id{display:flex;align-items:center;gap:8px}
+    .team-badge{background:transparent!important;background-color:transparent!important;box-shadow:none!important;border:0!important;border-radius:0!important;outline:0!important}
+    #afc-playoffs .team-badge,#nfc-playoffs .team-badge,
+    .playoff-grid .team-badge,.playoff-row .team-badge{
+      background:transparent!important;background-color:transparent!important;
+      box-shadow:none!important;border:0!important;border-radius:0!important;
+      width:34px!important;height:34px!important;min-width:34px!important;
+      padding:0!important;margin:0 11px 0 0!important;overflow:visible!important;
+    }
+    .playoff-row .team-badge img.team-logo{
+      width:34px!important;height:34px!important;min-width:34px!important;
+      min-height:34px!important;margin:0!important;background:transparent!important;
+      object-fit:contain!important;
+    }
+    .playoff-team-copy{display:flex;align-items:center;flex-wrap:wrap;column-gap:7px;row-gap:2px;min-width:0}
+    .playoff-abbr{display:inline!important;font-size:10px!important;font-weight:800!important;
+      color:#687382!important;letter-spacing:.04em}
+    .playoff-record{flex-basis:100%}
+    .team-id{display:flex;align-items:center;gap:0}
+
+    /* TABLAS MOVILES: compactas, con abreviaturas y separadores sutiles. */
+    .view table,#team-page-root table{
+      border-collapse:separate!important;border-spacing:0!important;
+      width:max-content!important;min-width:100%!important;font-size:11px!important;
+    }
+    .view table th,.view table td,#team-page-root table th,#team-page-root table td{
+      padding:7px 6px!important;line-height:1.2!important;
+      border-right:1px solid #e1e6eb!important;
+      border-bottom:1px solid #e1e6eb!important;
+      white-space:nowrap!important;font-variant-numeric:tabular-nums;
+    }
+    .view table th:last-child,.view table td:last-child,
+    #team-page-root table th:last-child,#team-page-root table td:last-child{border-right:0!important}
+    .view table thead th,#team-page-root table thead th{
+      padding:7px 6px!important;font-size:9px!important;letter-spacing:.025em;
+    }
+    .view table tbody tr,#team-page-root table tbody tr{height:34px!important}
+    .view table td:first-child,#team-page-root table td:first-child{text-align:center}
+    /* Clasificación, ofensiva y defensiva: logo + abreviatura, sin nombre largo. */
+    .view table .team-link,#team-page-root table .team-link{
+      display:inline-flex!important;align-items:center!important;gap:6px!important;
+      white-space:nowrap!important;font-size:11px!important;
+    }
+    .view table .team-link .team-full-name,
+    #team-page-root table .team-link .team-full-name{display:none!important}
+    .view table .team-link .muted,
+    #team-page-root table .team-link .muted{
+      display:inline!important;font-size:11px!important;font-weight:800!important;
+      color:inherit!important;
+    }
+    .view table .team-link img.team-logo,
+    #team-page-root table .team-link img.team-logo{
+      width:21px!important;height:21px!important;min-width:21px!important;
+      min-height:21px!important;flex:0 0 21px!important;margin:0 3px 0 0!important;
+    }
+    /* En partidos, el logo queda separado del nombre y el código sigue visible. */
+    .game-row-full .team-cell,.game-row-compact .team-cell{
+      display:table-cell!important;white-space:nowrap!important;
+    }
+    .game-row-full .team-cell img.team-logo,
+    .game-row-compact .team-cell img.team-logo{
+      width:22px!important;height:22px!important;min-width:22px!important;
+      flex:0 0 22px!important;margin:0 7px 0 0!important;
+    }
+    .game-row-full .team-cell .muted,
+    .game-row-compact .team-cell .muted{display:inline!important;font-size:10px!important}
+    /* Playoff Picture: sin placa oscura detrás del escudo. */
+    #afc-playoffs .team-badge,#nfc-playoffs .team-badge,
+    .playoff-grid .team-badge,.playoff-row .team-badge{
+      background:none!important;background-color:transparent!important;
+      background-image:none!important;box-shadow:none!important;border:0!important;
+      border-radius:0!important;outline:0!important;
+      width:31px!important;height:31px!important;min-width:31px!important;
+      padding:0!important;margin:0 12px 0 0!important;overflow:visible!important;
+    }
+    #afc-playoffs .team-badge img.team-logo,#nfc-playoffs .team-badge img.team-logo,
+    .playoff-grid .team-badge img.team-logo,.playoff-row .team-badge img.team-logo{
+      display:block!important;width:31px!important;height:31px!important;
+      min-width:31px!important;min-height:31px!important;flex:0 0 31px!important;
+      margin:0!important;background:transparent!important;
+    }
+    .playoff-row .team-id{display:flex!important;align-items:center!important;gap:0!important}
+    .playoff-team-copy{display:flex!important;align-items:baseline!important;
+      flex-wrap:wrap!important;column-gap:6px!important;row-gap:2px!important;min-width:0}
+    .playoff-abbr{display:inline!important;font-size:10px!important;font-weight:800!important;
+      color:#687382!important;letter-spacing:.04em}
+    .playoff-record{flex-basis:100%!important;font-size:9px!important;line-height:1.2!important}
+    .playoff-row{grid-template-columns:20px minmax(0,1fr) auto!important;gap:7px!important;
+      padding:9px 0!important}
    }
   `;
   document.head.appendChild(style);
