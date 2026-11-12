@@ -1517,3 +1517,45 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   const ro=new ResizeObserver(syncFixedHeader);ro.observe(sidebar);ro.observe(topbar);
  }
 })();
+
+
+/* GRIDIRON LAB — alturas exactas para tablas móviles de Estadísticas y Posiciones.
+   No afecta Partidos, escritorio ni Playoff Picture. */
+(function setMobileStatsAndStandingsRowHeights(){
+ if(document.getElementById('gridiron-mobile-stats-standings-heights')) return;
+ const style=document.createElement('style');
+ style.id='gridiron-mobile-stats-standings-heights';
+ style.textContent=`
+  @media (max-width:700px){
+   /* Encabezados: alto total de 30 px. */
+   #view-estadisticas #stats-offense-panel table > thead > tr > th,
+   #view-estadisticas #stats-defense-panel table > thead > tr > th,
+   #view-tabla table > thead#standings-head > tr > th {
+     height:30px!important;
+     min-height:30px!important;
+     max-height:30px!important;
+     box-sizing:border-box!important;
+     padding-top:0!important;
+     padding-bottom:0!important;
+     line-height:1!important;
+     vertical-align:middle!important;
+   }
+
+   /* Filas de equipos: alto total de 28 px.
+      En Posiciones se excluyen las filas separadoras de grupos/divisiones. */
+   #view-estadisticas #stats-offense-panel table > tbody#offense-table > tr > td,
+   #view-estadisticas #stats-defense-panel table > tbody#defense-table > tr > td,
+   #view-tabla table > tbody#standings-table > tr:not(.standings-group-row) > td {
+     height:28px!important;
+     min-height:28px!important;
+     max-height:28px!important;
+     box-sizing:border-box!important;
+     padding-top:0!important;
+     padding-bottom:0!important;
+     line-height:1!important;
+     vertical-align:middle!important;
+   }
+  }
+ `;
+ document.head.appendChild(style);
+})();
