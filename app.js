@@ -138,8 +138,8 @@ function gameRow(g,compact=false){
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  const localDateTime=gameLocalDateTime(g);
  return compact
-  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${teamLogo(g.away)}<span class="game-team-name">${g.awayName}</span> <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${teamLogo(g.home)}<span class="game-team-name">${g.homeName}</span> <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
-  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${teamLogo(g.away)}<span class="game-team-name">${g.awayName}</span> <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">${mobileSchedule ? "" : "@"}</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${teamLogo(g.home)}<span class="game-team-name">${g.homeName}</span> <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${mobileSchedule ? "" : status}</span></td></tr>`;
+  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${teamLogo(g.away)}<span class="game-team-name">${g.awayName}</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${teamLogo(g.home)}<span class="game-team-name">${g.homeName}</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${teamLogo(g.away)}<span class="game-team-name">${g.awayName}</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">${mobileSchedule ? "" : "@"}</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${teamLogo(g.home)}<span class="game-team-name">${g.homeName}</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${mobileSchedule ? "" : status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -258,7 +258,7 @@ function gdNum(v){return v==null?'—':fmt(v)}
 function gdCompareTable(g){
  const a=g.awayStats||{},h=g.homeStats||{};
  const rows=[['Puntos',g.awayPts,g.homePts],['Pase neto (yds)',teamStat(a,'passNet'),teamStat(h,'passNet')],['Pase bruto (yds)',a.pass??a.passGross,h.pass??h.passGross],['Completos / intentos',`${gdNum(a.passComp)} / ${gdNum(a.passAtt)}`,`${gdNum(h.passComp)} / ${gdNum(h.passAtt)}`],['TD por pase',a.passTD,h.passTD],['Intercepciones',a.interceptions,h.interceptions],['Capturas permitidas',a.sacksAllowed,h.sacksAllowed],['Carrera (yds)',a.rush,h.rush],['Acarreos',a.rushAtt,h.rushAtt],['TD por carrera',a.rushTD,h.rushTD],['Recepciones',a.receptions,h.receptions],['Yardas recibidas',a.receiving,h.receiving],['TD por recepción',a.receivingTD,h.receivingTD],['Primeros downs',a.firstDowns,h.firstDowns],['3er down',`${gdNum(a.thirdDownConv)} / ${gdNum(a.thirdDownAtt)}`,`${gdNum(h.thirdDownConv)} / ${gdNum(h.thirdDownAtt)}`],['4to down',`${gdNum(a.fourthDownConv)} / ${gdNum(a.fourthDownAtt)}`,`${gdNum(h.fourthDownConv)} / ${gdNum(h.fourthDownAtt)}`],['Castigos (yds)',`${gdNum(a.penalties)} (${gdNum(a.penaltyYards)})`,`${gdNum(h.penalties)} (${gdNum(h.penaltyYards)})`],['Turnovers',a.turnovers,h.turnovers],['Jugadas',a.plays,h.plays],['EPA',a.epa==null?'—':Number(a.epa).toFixed(1),h.epa==null?'—':Number(h.epa).toFixed(1)]];
- return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${teamLogo(g.away)}<span class="gd-team-label">${g.away}</span></button></th><th><button class="gd-team" data-team-history="${g.home}">${teamLogo(g.home)}<span class="gd-team-label">${g.home}</span></button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
+ return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${teamLogo(g.away)}<span class="gd-team-name">${g.awayName}</span><span class="gd-team-abbr">${g.away}</span></button></th><th><button class="gd-team" data-team-history="${g.home}">${teamLogo(g.home)}<span class="gd-team-name">${g.homeName}</span><span class="gd-team-abbr">${g.home}</span></button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
 }
 function openGameDetail(game){
  ensureGameDetailModal();
@@ -1268,6 +1268,16 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   const teamMobile=document.createElement('style');
   teamMobile.id='gridiron-mobile-team-alignment';
   teamMobile.textContent=`
+   /* Desktop: conservar el encabezado original en una sola línea con VS. */
+   @media(min-width:701px){
+    #game-detail-modal #gd-title{
+      display:flex;flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap;
+    }
+    #game-detail-modal .gd-matchup-team{display:inline-flex;align-items:center;gap:7px}
+    #game-detail-modal .gd-matchup-vs{display:inline}
+    #game-detail-modal .gd-team-name{display:inline}
+    #game-detail-modal .gd-team-abbr{display:none}
+   }
    @media(max-width:700px){
     #game-detail-modal .gd-top{display:block!important;position:relative!important;padding-right:76px!important}
     #game-detail-modal #gd-title{
@@ -1289,19 +1299,20 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
     #game-detail-modal .gd-table thead th:nth-child(2),
     #game-detail-modal .gd-table thead th:nth-child(3){text-align:center!important;vertical-align:middle!important}
     #game-detail-modal .gd-team{
-      display:flex!important;flex-direction:column!important;align-items:center!important;
-      justify-content:center!important;gap:5px!important;width:100%!important;
-      min-width:0!important;text-align:center!important;white-space:normal!important;
+      display:flex!important;flex-direction:row!important;align-items:center!important;
+      justify-content:center!important;gap:7px!important;width:100%!important;
+      min-width:0!important;text-align:center!important;white-space:nowrap!important;
       line-height:1.2!important;
     }
     #game-detail-modal .gd-team img.team-logo{
-      display:block!important;width:29px!important;height:29px!important;
-      min-width:29px!important;flex:0 0 29px!important;margin:0 auto!important;
+      display:block!important;width:27px!important;height:27px!important;
+      min-width:27px!important;flex:0 0 27px!important;margin:0!important;
       object-fit:contain!important;
     }
-    #game-detail-modal .gd-team-label{
-      display:block!important;width:100%!important;text-align:center!important;
-      overflow-wrap:anywhere!important;font-size:11px!important;line-height:1.25!important;
+    #game-detail-modal .gd-team-name{display:none!important}
+    #game-detail-modal .gd-team-abbr{
+      display:inline!important;font-size:12px!important;font-weight:800!important;
+      color:#ffc247!important;line-height:1.2!important;
     }
     #game-detail-modal .gd-table thead th{padding:9px 4px!important}
     #games-table tr.game-row-full>.game-away,
