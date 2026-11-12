@@ -1343,14 +1343,15 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
       /* ESTADÍSTICAS DE EQUIPO — encabezado 36 px / filas 26 px. */
       #view-estadisticas #stats-offense-panel table > tbody#offense-table > tr > td,
       #view-estadisticas #stats-defense-panel table > tbody#defense-table > tr > td {
-        height: 26px !important;
-        min-height: 26px !important;
+        height: 30px !important;
+        min-height: 30px !important;
         padding: 2px 7px !important;
         font-size: 10px !important;
         line-height: 1 !important;
         vertical-align: middle !important;
         box-sizing: border-box !important;
         white-space: nowrap !important;
+        border-bottom: 1px solid rgba(112, 126, 141, 0.20) !important;
       }
 
       #view-estadisticas #stats-offense-panel table > thead > tr > th,
@@ -1387,14 +1388,15 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
 
       /* POSICIONES — mismo ritmo visual que estadísticas. */
       #view-tabla table > tbody#standings-table > tr:not(.standings-group-row) > td {
-        height: 26px !important;
-        min-height: 26px !important;
+        height: 30px !important;
+        min-height: 30px !important;
         padding: 2px 7px !important;
         font-size: 10px !important;
         line-height: 1 !important;
         vertical-align: middle !important;
         box-sizing: border-box !important;
         white-space: nowrap !important;
+        border-bottom: 1px solid rgba(112, 126, 141, 0.20) !important;
       }
 
       #view-tabla thead#standings-head th {
@@ -1437,13 +1439,14 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
       /* PARTIDOS — compacta el alto sin redistribuir las columnas.
          Esta regla iguala la especificidad del layout V6 y se carga después. */
       #view-partidos table:has(#games-table) tbody#games-table tr.game-row-full td {
-        height: 28px !important;
-        min-height: 28px !important;
+        height: 35px !important;
+        min-height: 35px !important;
         padding: 2px 7px !important;
         font-size: 10px !important;
         line-height: 1 !important;
         vertical-align: middle !important;
         box-sizing: border-box !important;
+        border-bottom: 1px solid rgba(112, 126, 141, 0.20) !important;
       }
 
       #view-partidos table:has(#games-table) tbody#games-table tr.game-row-full td.team-cell {
