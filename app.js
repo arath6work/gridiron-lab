@@ -715,13 +715,20 @@ function loadSeason(){
  populateWeekFilter();
 renderGames();renderOffense();renderDefense();renderStandings();renderSortable('standings');renderSortable('offense');renderSortable('defense');renderPower();renderPlayoffs();renderMetrics();renderChart();
 }
-// Conserva la pestaña activa al recargar la página.
+// Conserva y restaura la pestaña activa inmediatamente, antes de cargar los datos.
 const ACTIVE_VIEW_KEY = 'gridiron-lab-active-view';
-function restoreActiveView(){
- const savedView = sessionStorage.getItem(ACTIVE_VIEW_KEY);
- if(!savedView) return;
- const savedButton = document.querySelector(`.nav-item[data-view="${savedView}"]`);
- if(savedButton) savedButton.click();
+const savedViewAtStartup = sessionStorage.getItem(ACTIVE_VIEW_KEY);
+if(savedViewAtStartup){
+ const savedButtonAtStartup = document.querySelector(`.nav-item[data-view="${savedViewAtStartup}"]`);
+ if(savedButtonAtStartup){
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b===savedButtonAtStartup));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+savedViewAtStartup));
+  const savedMetaAtStartup = views[savedViewAtStartup];
+  if(savedMetaAtStartup){
+   $('#page-title').textContent=savedMetaAtStartup[0];
+   $('#page-subtitle').textContent=savedMetaAtStartup[1];
+  }
+ }
 }
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{
  sessionStorage.setItem(ACTIVE_VIEW_KEY, btn.dataset.view);
@@ -780,7 +787,6 @@ async function init(){
   }
   renderStandingsSubfilters();
   loadSeason();
-  restoreActiveView();
   const teamRoute=location.hash.match(/^#equipo\/([^/]+)/);if(teamRoute)openTeamProfile(decodeURIComponent(teamRoute[1]),false);
  }catch(error){
   console.error(error);
