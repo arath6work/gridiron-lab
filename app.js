@@ -1457,6 +1457,80 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
     }
    }
 
+
+   /* Corrección final de tablas de escritorio: filas bajas y sin márgenes laterales.
+      No aplica a Playoff Picture ni a la vista móvil. */
+   @media (min-width: 701px){
+     /* Quitar el límite artificial de 1280px que dejaba bandas vacías a los lados. */
+     #view-estadisticas .table-scroll,
+     #view-tabla .table-scroll{
+       width:100%!important;
+       max-width:none!important;
+       margin-left:0!important;
+       margin-right:0!important;
+       padding-left:0!important;
+       padding-right:0!important;
+       box-sizing:border-box!important;
+     }
+     #view-estadisticas .table-scroll table,
+     #view-tabla .table-scroll table{
+       width:100%!important;
+       max-width:none!important;
+       min-width:0!important;
+       margin:0!important;
+       table-layout:auto!important;
+       border-spacing:0!important;
+     }
+
+     /* Reducir altura real de las filas de ofensiva y defensiva. */
+     #stats-offense-panel #offense-table > tr > td,
+     #stats-defense-panel #defense-table > tr > td,
+     #view-estadisticas #offense-table > tr > td,
+     #view-estadisticas #defense-table > tr > td{
+       padding:6px 9px!important;
+       line-height:1.15!important;
+       height:38px!important;
+       box-sizing:border-box!important;
+       vertical-align:middle!important;
+     }
+     #stats-offense-panel thead th,
+     #stats-defense-panel thead th,
+     #view-estadisticas #stats-offense-panel th,
+     #view-estadisticas #stats-defense-panel th{
+       padding:7px 9px!important;
+       line-height:1.15!important;
+       white-space:nowrap!important;
+     }
+
+     /* Reducir altura real de las filas de Liga/Conferencia/División. */
+     #view-tabla #standings-table > tr:not(.standings-group-row) > td{
+       padding:6px 9px!important;
+       line-height:1.15!important;
+       height:38px!important;
+       box-sizing:border-box!important;
+       vertical-align:middle!important;
+     }
+     #view-tabla #standings-table > tr.standings-group-row > td{
+       padding:7px 10px!important;
+       line-height:1.15!important;
+     }
+     #view-tabla #standings-head th{
+       padding:7px 9px!important;
+       line-height:1.15!important;
+       white-space:nowrap!important;
+     }
+
+     /* Mantener el nombre del equipo completo y sin que se encime con el logo. */
+     #view-estadisticas #offense-table .team-link,
+     #view-estadisticas #defense-table .team-link,
+     #view-tabla #standings-table .team-link{
+       display:inline-flex!important;
+       align-items:center!important;
+       gap:7px!important;
+       white-space:nowrap!important;
+     }
+   }
+
   `;
   document.head.appendChild(teamMobile);
  }
