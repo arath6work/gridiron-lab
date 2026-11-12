@@ -1407,6 +1407,56 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
       flex:0 0 25px!important;margin:0!important;
     }
    }
+
+   /* Refinamiento de densidad: SOLO escritorio. */
+   @media(min-width:701px){
+    /* Partidos: filas más bajas, conservando alineación, logos y legibilidad. */
+    #games-table tr.game-row-full td{
+      padding-top:8px!important;padding-bottom:8px!important;
+      line-height:1.2!important;vertical-align:middle!important;
+    }
+    #games-table tr.game-row-full .team-logo{
+      width:22px!important;height:22px!important;min-width:22px!important;
+      flex:0 0 22px!important;object-fit:contain!important;
+    }
+    #games-table tr.game-row-full .game-away,
+    #games-table tr.game-row-full .game-home{gap:8px!important}
+
+    /* Estadísticas ofensivas/defensivas: filas más compactas, sin apretar texto. */
+    #view-estadisticas .table-scroll th,
+    #view-estadisticas .table-scroll td{
+      padding-top:8px!important;padding-bottom:8px!important;
+      line-height:1.25!important;
+    }
+    #view-estadisticas .table-scroll tbody tr{height:42px!important}
+    #view-estadisticas [data-stats-mode]{
+      min-height:0!important;height:auto!important;
+      padding:6px 16px!important;line-height:1.2!important;
+    }
+
+    /* Posiciones: pestañas Liga/Conferencia/División más chaparras. */
+    #view-tabla [data-standings-view]{
+      min-height:0!important;height:auto!important;
+      padding:6px 16px!important;line-height:1.2!important;
+    }
+    #view-tabla .table-scroll th,
+    #view-tabla .table-scroll td{
+      padding-top:8px!important;padding-bottom:8px!important;
+      line-height:1.25!important;
+    }
+    #view-tabla .table-scroll tbody tr:not(.standings-group-row){height:42px!important}
+
+    /* Eliminar el acolchado lateral que deja márgenes blancos dentro de la tarjeta. */
+    #view-estadisticas .table-scroll,
+    #view-tabla .table-scroll{
+      padding-left:0!important;padding-right:0!important;
+    }
+    #view-estadisticas .table-scroll table,
+    #view-tabla .table-scroll table{
+      margin-left:auto!important;margin-right:auto!important;
+    }
+   }
+
   `;
   document.head.appendChild(teamMobile);
  }
