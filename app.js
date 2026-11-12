@@ -263,7 +263,7 @@ function gdCompareTable(g){
 function openGameDetail(game){
  ensureGameDetailModal();
  const modal=$('#game-detail-modal');
- $('#gd-title').innerHTML=`<span class="gd-matchup-team">${teamLogo(game.away)}<span>${game.awayName}</span></span><span class="gd-matchup-vs">vs.</span><span class="gd-matchup-team">${teamLogo(game.home)}<span>${game.homeName}</span></span>`;
+ $('#gd-title').innerHTML=`<span class="gd-matchup-team">${teamLogo(game.away)}<span>${game.awayName}</span></span><span class="gd-matchup-vs">vs</span><span class="gd-matchup-team">${teamLogo(game.home)}<span>${game.homeName}</span></span>`;
  const detailDateTime=gameLocalDateTime(game);
  $('#gd-sub').textContent=`Temporada ${game.season} · Semana ${game.week} · ${detailDateTime.date}${detailDateTime.time?` · ${detailDateTime.time}`:''} · ${game.status}`;
  const hasStats=!!(game.awayStats||game.homeStats);
@@ -1277,6 +1277,18 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
     #game-detail-modal .gd-matchup-vs{display:inline}
     #game-detail-modal .gd-team-name{display:inline}
     #game-detail-modal .gd-team-abbr{display:none}
+    #game-detail-modal .gd-table thead th:nth-child(2),
+    #game-detail-modal .gd-table thead th:nth-child(3){text-align:center!important}
+    #game-detail-modal .gd-table thead th:nth-child(2) .gd-team,
+    #game-detail-modal .gd-table thead th:nth-child(3) .gd-team{
+      display:flex!important;flex-direction:row!important;align-items:center!important;
+      justify-content:center!important;gap:8px!important;width:100%!important;
+      text-align:center!important;
+    }
+    #game-detail-modal .gd-table thead th:nth-child(2) .gd-team img.team-logo,
+    #game-detail-modal .gd-table thead th:nth-child(3) .gd-team img.team-logo{
+      margin:0!important;flex:0 0 auto!important;
+    }
    }
    @media(max-width:700px){
     #game-detail-modal .gd-top{display:block!important;position:relative!important;padding-right:76px!important}
