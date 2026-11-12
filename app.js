@@ -1201,6 +1201,68 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
  }
  `;
  document.head.appendChild(style);
+
+ /* FIX DEFINITIVO — tarjetas de partidos en móvil.
+    Se aplica al final para ganar a las reglas móviles anteriores.
+    No afecta escritorio. */
+ if(!document.getElementById('gridiron-games-cards-final')){
+  const cardsFix=document.createElement('style');
+  cardsFix.id='gridiron-games-cards-final';
+  cardsFix.textContent=`
+   @media(max-width:700px){
+    #games-table{display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+      gap:10px!important;width:100%!important;max-width:100%!important;
+      padding:8px!important;box-sizing:border-box!important}
+    #games-table tr.game-row-full{
+      display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;
+      grid-template-areas:"meta meta" "away awayScore" "home homeScore"!important;
+      align-items:center!important;gap:7px 9px!important;
+      width:100%!important;max-width:100%!important;min-width:0!important;
+      height:auto!important;min-height:96px!important;box-sizing:border-box!important;
+      padding:12px 13px!important;margin:0!important;
+      background:#fff!important;border:1px solid #d7dee5!important;
+      border-radius:12px!important;box-shadow:0 2px 7px #10203010!important;
+      overflow:hidden!important;
+    }
+    #games-table tr.game-row-full>td{
+      display:block!important;position:static!important;visibility:visible!important;
+      opacity:1!important;width:auto!important;max-width:100%!important;min-width:0!important;
+      height:auto!important;min-height:0!important;box-sizing:border-box!important;
+      padding:0!important;margin:0!important;border:0!important;
+      white-space:normal!important;overflow:visible!important;text-align:left!important;
+    }
+    #games-table tr.game-row-full>.game-week{grid-area:meta!important;justify-self:start!important;
+      font-size:11px!important;font-weight:800!important;color:#687482!important}
+    #games-table tr.game-row-full>.game-datetime{grid-area:meta!important;justify-self:end!important;
+      display:flex!important;gap:4px!important;align-items:center!important;
+      font-size:10px!important;line-height:1.25!important;color:#687482!important;
+      white-space:nowrap!important;text-align:right!important}
+    #games-table tr.game-row-full>.game-away{grid-area:away!important;display:flex!important;
+      align-items:center!important;gap:7px!important;font-size:14px!important;
+      line-height:1.3!important;font-weight:750!important;overflow-wrap:anywhere!important}
+    #games-table tr.game-row-full>.game-home{grid-area:home!important;display:flex!important;
+      align-items:center!important;gap:7px!important;font-size:14px!important;
+      line-height:1.3!important;font-weight:750!important;overflow-wrap:anywhere!important}
+    #games-table tr.game-row-full>.game-away-score{grid-area:awayScore!important;
+      display:block!important;text-align:right!important;font-size:17px!important;font-weight:850!important}
+    #games-table tr.game-row-full>.game-home-score{grid-area:homeScore!important;
+      display:block!important;text-align:right!important;font-size:17px!important;font-weight:850!important}
+    #games-table tr.game-row-full>.game-at,
+    #games-table tr.game-row-full>.game-status{display:none!important}
+    #games-table tr.game-row-full .team-logo{display:inline-block!important;
+      width:23px!important;height:23px!important;min-width:23px!important;
+      flex:0 0 23px!important;margin:0 3px 0 0!important;object-fit:contain!important}
+    #games-table tr.game-row-full .muted{display:inline!important;font-size:10px!important;
+      font-weight:700!important;color:#687482!important}
+    #view-partidos .table-scroll{overflow:visible!important}
+    #view-partidos table:has(>tbody#games-table){display:block!important;
+      width:100%!important;max-width:100%!important;min-width:0!important;
+      table-layout:auto!important;overflow:visible!important}
+    #view-partidos table:has(>tbody#games-table)>thead{display:none!important}
+   }
+  `;
+  document.head.appendChild(cardsFix);
+ }
  const sidebar=document.querySelector('.shell>.sidebar');
  const topbar=document.querySelector('.topbar');
  if(!sidebar||!topbar)return;
