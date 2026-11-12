@@ -313,7 +313,18 @@ def apply_weekly_opponent_rushing_fumbles(stats, weekly_rows, season):
             continue
         if (row.get('season_type') or 'REG').upper() != 'REG':
             continue
-        offense = resolve_team(row.get('team'))
+        # Algunas filas históricas de stats_team_week pueden venir sin código
+        # de equipo. Se ignoran únicamente si no contienen fumbles que deban
+        # atribuirse; si contienen datos, se detiene el proceso para no perderlos.
+        team_code = (row.get('team') or '').strip()
+        if not team_code:
+            if num(row, 'rushing_fumbles') or num(row, 'rushing_fumbles_lost'):
+                raise RuntimeError(
+                    f'{season}: fila semanal REG sin código de equipo y con fumbles; '
+                    'no se puede atribuir a una defensa.'
+                )
+            continue
+        offense = resolve_team(team_code)
         defense = resolve_team(row.get('opponent_team'))
         game_id = (row.get('game_id') or '').strip()
         if not game_id:
