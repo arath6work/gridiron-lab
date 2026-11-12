@@ -1589,6 +1589,81 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
      }
    }
 
+
+   /* Ajuste robusto por IDs reales de los tbody; desktop únicamente. */
+   @media (min-width:701px){
+     /* Estadísticas de equipo: filas de datos claramente más bajas que el encabezado. */
+     #offense-table tr:not(:first-child) td,
+     #defense-table tr:not(:first-child) td,
+     #standings-table tr:not(.standings-group-row) td{
+       height:25px!important;
+       min-height:25px!important;
+       padding:2px 7px!important;
+       line-height:1!important;
+       font-size:10px!important;
+       vertical-align:middle!important;
+       box-sizing:border-box!important;
+     }
+     #offense-table .team-link,
+     #defense-table .team-link,
+     #standings-table .team-link{
+       display:inline-flex!important;
+       align-items:center!important;
+       gap:4px!important;
+       font-size:10px!important;
+       line-height:1!important;
+       white-space:nowrap!important;
+     }
+     #offense-table .team-link img,
+     #defense-table .team-link img,
+     #standings-table .team-link img,
+     #offense-table .team-logo,
+     #defense-table .team-logo,
+     #standings-table .team-logo{
+       width:15px!important;height:15px!important;
+       min-width:15px!important;min-height:15px!important;
+       flex:0 0 15px!important;object-fit:contain!important;
+       margin:0!important;
+     }
+     #standings-table tr.standings-group-row td{
+       height:auto!important;padding:5px 8px!important;
+       font-size:10px!important;line-height:1.1!important;
+     }
+
+     /* El encabezado queda deliberadamente más alto que las filas de datos. */
+     #offense-table,#defense-table,#standings-table{border-collapse:collapse!important}
+     #offense-table,#defense-table{ }
+     #offense-table tr:first-child td,
+     #defense-table tr:first-child td{height:42px!important}
+     #standings-head th{
+       height:42px!important;padding:12px 7px!important;
+       font-size:10px!important;line-height:1.1!important;
+     }
+
+     /* Partidos: compactar el alto de cada fila sin alterar columnas ni alineación. */
+     #games-table tr.game-row-full td{
+       height:34px!important;
+       min-height:34px!important;
+       padding:4px 8px!important;
+       line-height:1.1!important;
+       font-size:11px!important;
+       vertical-align:middle!important;
+       box-sizing:border-box!important;
+     }
+     #games-table tr.game-row-full .team-logo{
+       width:17px!important;height:17px!important;
+       min-width:17px!important;flex:0 0 17px!important;
+       object-fit:contain!important;margin:0 4px 0 0!important;
+     }
+     #games-table tr.game-row-full .game-team-name{
+       font-size:11px!important;line-height:1.1!important;
+       white-space:nowrap!important;
+     }
+     #games-table tr.game-row-full .game-datetime{
+       line-height:1.1!important;font-size:10px!important;
+     }
+   }
+
   `;
   document.head.appendChild(teamMobile);
  }
