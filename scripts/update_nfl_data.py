@@ -1,6 +1,5 @@
 import csv
 import datetime
-from decimal import Decimal, ROUND_HALF_EVEN
 import gzip
 import io
 import json
@@ -150,6 +149,72 @@ def official_code_candidates(abbr):
     return (abbr,)
 
 
+def aggregate_weekly_rushing_fumbles(weekly_rows, season):
+    """Suma fumbles terrestres de las filas semanales REG por equipo."""
+    required = {'team', 'season_type', 'rushing_fumbles', 'rushing_fumbles_lost'}
+    if not weekly_rows:
+        raise RuntimeError(f'{season}: no hay estadísticas semanales para validar fumbles')
+    missing = sorted(required - set(weekly_rows[0].keys()))
+    if missing:
+        raise RuntimeError(
+            f'{season}: stats_team_week no contiene columnas para validar fumbles: '
+            + ', '.join(missing)
+        )
+
+    totals = {}
+    for row in weekly_rows:
+        if str(row.get('season', season)) != str(season):
+            continue
+        if (row.get('season_type') or 'REG').upper() != 'REG':
+            continue
+        team = (row.get('team') or '').strip()
+        if not team:
+            continue
+        values = totals.setdefault(team, {'fumbles': 0.0, 'lost': 0.0, 'weeks': 0})
+        values['fumbles'] += num(row, 'rushing_fumbles')
+        values['lost'] += num(row, 'rushing_fumbles_lost')
+        values['weeks'] += 1
+    if not totals:
+        raise RuntimeError(f'{season}: no hay filas REG válidas en stats_team_week')
+    return totals
+
+
+def validate_weekly_vs_season_rushing_fumbles(stats, official_rows, weekly_rows, season):
+    """Exige que el acumulado semanal REG coincida con el resumen oficial REG."""
+    weekly = aggregate_weekly_rushing_fumbles(weekly_rows, season)
+    mismatches = []
+    matched = 0
+    for abbr in stats:
+        official_code = next(
+            (code for code in official_code_candidates(abbr) if code in official_rows),
+            None,
+        )
+        weekly_code = next(
+            (code for code in official_code_candidates(abbr) if code in weekly),
+            None,
+        )
+        if not official_code or not weekly_code:
+            mismatches.append(f'{abbr}: sin correspondencia oficial/semanal')
+            continue
+        official = official_rows[official_code]
+        week_total = weekly[weekly_code]
+        reg_fumbles = num(official, 'rushing_fumbles')
+        reg_lost = num(official, 'rushing_fumbles_lost')
+        if (week_total['fumbles'], week_total['lost']) != (reg_fumbles, reg_lost):
+            mismatches.append(
+                f'{abbr}: REG={reg_fumbles:g}/{reg_lost:g}, '
+                f'semanal={week_total["fumbles"]:g}/{week_total["lost"]:g}'
+            )
+        else:
+            matched += 1
+    if mismatches:
+        raise RuntimeError(
+            f'{season}: discrepancia en fumbles terrestres entre stats_team_reg '
+            'y la suma de stats_team_week: ' + '; '.join(mismatches[:12])
+        )
+    print(f'{season}: fumbles terrestres validados: {matched} equipos (REG semanal = REG temporada)')
+
+
 def apply_official_team_stats(stats, official_rows):
     """Sobrescribe solo métricas complementarias con totales oficiales.
 
@@ -204,6 +269,96 @@ def apply_official_team_stats(stats, official_rows):
         for target, source in fields.items(): 
             team[target] = abs(num(row, source)) if source == 'penalty_yards' else num(row, source)
 
+
+
+def apply_weekly_opponent_rushing_fumbles(stats, weekly_rows, season):
+    """Atribuye a cada defensa los rushing_fumbles del rival en cada juego REG.
+
+    stats_team_week registra una fila por equipo/juego y contiene opponent_team.
+    La métrica defensiva debe ser el total de fumbles terrestres del ataque rival,
+    no una búsqueda local de fumbled_player_id dentro del PBP.
+    """
+    if not weekly_rows:
+        raise RuntimeError(f'{season}: stats_team_week está vacío; no se pueden asignar FUM defensivos')
+
+    required = {'season', 'season_type', 'team', 'opponent_team', 'game_id',
+                'rushing_fumbles', 'rushing_fumbles_lost'}
+    missing = sorted(required - set(weekly_rows[0].keys()))
+    if missing:
+        raise RuntimeError(
+            f'{season}: stats_team_week no contiene columnas para FUM defensivos: '
+            + ', '.join(missing)
+        )
+
+    def resolve_team(code):
+        code = (code or '').strip()
+        if code in stats:
+            return code
+        matches = [abbr for abbr in stats if code in official_code_candidates(abbr)]
+        if len(matches) == 1:
+            return matches[0]
+        raise RuntimeError(
+            f'{season}: no se pudo resolver el código {code!r} de stats_team_week '
+            'contra los equipos del calendario'
+        )
+
+    totals = {abbr: {'fumbles': 0.0, 'lost': 0.0, 'games': 0} for abbr in stats}
+    seen = set()
+    offense_sum = 0.0
+    defense_sum = 0.0
+    matched_rows = 0
+
+    for row in weekly_rows:
+        if str(row.get('season', '')) != str(season):
+            continue
+        if (row.get('season_type') or 'REG').upper() != 'REG':
+            continue
+        offense = resolve_team(row.get('team'))
+        defense = resolve_team(row.get('opponent_team'))
+        game_id = (row.get('game_id') or '').strip()
+        if not game_id:
+            raise RuntimeError(f'{season}: fila semanal sin game_id al asignar FUM defensivos')
+        key = (game_id, offense)
+        if key in seen:
+            raise RuntimeError(f'{season}: fila semanal duplicada para {offense} en {game_id}')
+        seen.add(key)
+
+        fumbles = num(row, 'rushing_fumbles')
+        lost = num(row, 'rushing_fumbles_lost')
+        totals[defense]['fumbles'] += fumbles
+        totals[defense]['lost'] += lost
+        totals[defense]['games'] += 1
+        offense_sum += fumbles
+        defense_sum += fumbles
+        matched_rows += 1
+
+    missing_teams = [abbr for abbr, value in totals.items() if value['games'] == 0]
+    if missing_teams:
+        raise RuntimeError(
+            f'{season}: sin registros semanales de rivales para equipos: '
+            + ', '.join(sorted(missing_teams))
+        )
+    if abs(offense_sum - defense_sum) > 1e-9:
+        raise RuntimeError(f'{season}: no cuadra el total de FUM ofensivos y defensivos')
+
+    changes = []
+    for abbr, value in totals.items():
+        old_fum = num(stats[abbr], 'rushFumblesAllowed')
+        old_lost = num(stats[abbr], 'rushFumblesLostAllowed')
+        new_fum = value['fumbles']
+        new_lost = value['lost']
+        if (old_fum, old_lost) != (new_fum, new_lost):
+            changes.append(f'{abbr} {old_fum:g}/{old_lost:g}->{new_fum:g}/{new_lost:g}')
+        stats[abbr]['rushFumblesAllowed'] = new_fum
+        stats[abbr]['rushFumblesLostAllowed'] = new_lost
+
+    print(
+        f'{season}: FUM defensivos asignados desde rushing_fumbles del rival: '
+        f'{matched_rows} filas, {len(stats)} defensas; '
+        f'{len(changes)} ajustes respecto al PBP local'
+    )
+    if changes:
+        print(f'{season}: diferencias PBP -> semanal: ' + '; '.join(changes))
 
 def main():
     schedules = read_csv(f'{BASE}/schedules/games.csv')
@@ -313,6 +468,19 @@ def main():
         except Exception as error:
             print(f'{season}: no se pudieron cargar estadísticas por partido: {error}')
 
+        # Control de calidad: los fumbles terrestres del resumen REG deben
+        # coincidir con la suma de los registros semanales REG. Si no coinciden,
+        # se cancela antes de publicar el JSON; nunca se corrigen por equipo a mano.
+        if official_team_rows and weekly_stats_loaded:
+            validate_weekly_vs_season_rushing_fumbles(
+                stats, official_team_rows, weekly_rows, season
+            )
+        elif season == CURRENT:
+            raise RuntimeError(
+                f'{season}: no se pudo validar automáticamente rushing_fumbles '
+                'con stats_team_week; se cancela la publicación para proteger data/nfl.json.'
+            )
+
         game_stats_by_id = {}
         seen_team_games = {}
         for row in weekly_rows:
@@ -389,11 +557,6 @@ def main():
             c = max(0.0, min(2.375, (touchdowns / attempts) * 20))
             d = max(0.0, min(2.375, 2.375 - (interceptions / attempts) * 25))
             return ((a + b + c + d) / 6) * 100
-
-        def nfl_rating_display(value):
-            # NFL.com resuelve empates exactos a una décima con redondeo al par:
-            # 92.25 -> 92.2. Evita que JavaScript/Python lo presenten como 92.3.
-            return float(Decimal(str(value)).quantize(Decimal('0.1'), rounding=ROUND_HALF_EVEN))
 
         for play in pbp:
             if str(play.get('season', '')) != str(season):
@@ -551,6 +714,16 @@ def main():
         if official_team_rows:
             apply_official_team_stats(stats, official_team_rows)
 
+        # FUM defensivos: se atribuyen desde el registro semanal del ataque rival.
+        # El resumen REG semanal ya fue validado contra stats_team_reg arriba.
+        if weekly_stats_loaded:
+            apply_weekly_opponent_rushing_fumbles(stats, weekly_rows, season)
+        elif season == CURRENT:
+            raise RuntimeError(
+                f'{season}: faltan estadísticas semanales para asignar FUM defensivos; '
+                'se conserva el JSON anterior.'
+            )
+
         teams = []
         for team in stats.values():
             gp = team['gp']
@@ -558,11 +731,11 @@ def main():
             team['passAllowedNet'] = team['passAllowed'] - team['sacksMadeYards']
             # Métricas complementarias calculadas sobre las jugadas de temporada regular.
             team['passPct'] = team['passComp'] / team['passAtt'] if team['passAtt'] else 0
-            team['passAvg'] = team['passNet'] / team['passAtt'] if team['passAtt'] else 0
-            team['passerRating'] = nfl_rating_display(passer_rating(
-                team['passComp'], team['passAtt'], team['pass'],
+            team['passAvg'] = team['passNet'] / (team['passAtt'] - team['sacksAllowed']) if (team['passAtt'] - team['sacksAllowed']) > 0 else 0
+            team['passerRating'] = passer_rating(
+                team['passComp'], team['passAtt'], team['passNet'],
                 team['passTD'], team['interceptions']
-            ))
+            )
             team['rushAvg'] = team['rush'] / team['rushAtt'] if team['rushAtt'] else 0
             team['receivingAvg'] = team['receiving'] / team['receptions'] if team['receptions'] else 0
             team['receivingPerGame'] = team['receiving'] / gp if gp else 0
@@ -571,10 +744,10 @@ def main():
 
             team['passPctAllowed'] = team['passCompAllowed'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
             team['passAvgAllowed'] = team['passAllowedNet'] / team['passAttAllowed'] if team['passAttAllowed'] else 0
-            team['passerRatingAllowed'] = nfl_rating_display(passer_rating(
-                team['passCompAllowed'], team['passAttAllowed'], team['passAllowed'],
+            team['passerRatingAllowed'] = passer_rating(
+                team['passCompAllowed'], team['passAttAllowed'], team['passAllowedNet'],
                 team['passTDAllowed'], team['interceptionsMade']
-            ))
+            )
             team['rushAvgAllowed'] = team['rushAllowed'] / team['rushAttAllowed'] if team['rushAttAllowed'] else 0
             team['receivingAvgAllowed'] = team['receivingAllowed'] / team['receptionsAllowed'] if team['receptionsAllowed'] else 0
             team['receivingAllowedPerGame'] = team['receivingAllowed'] / gp if gp else 0
