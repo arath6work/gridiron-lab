@@ -1,4 +1,75 @@
 const $ = s => document.querySelector(s);
+
+// TABLAS COMPACTAS PARA MOVIL — SOLO PRESENTACION
+(function(){
+ const mobileTableStyle = document.createElement('style');
+ mobileTableStyle.id = 'gridiron-mobile-compact-tables';
+ mobileTableStyle.textContent = `
+ @media (max-width: 700px) {
+   .view table,
+   #team-page-root table {
+     border-collapse: separate !important;
+     border-spacing: 0 !important;
+     font-size: 12px !important;
+     max-width: 100%;
+   }
+
+   .view table th,
+   .view table td,
+   #team-page-root table th,
+   #team-page-root table td {
+     padding: 8px 7px !important;
+     border-right: 1px solid #dce2e8 !important;
+     border-bottom: 1px solid #e2e7ec !important;
+     line-height: 1.25 !important;
+     white-space: nowrap;
+     font-variant-numeric: tabular-nums;
+   }
+
+   .view table th:last-child,
+   .view table td:last-child,
+   #team-page-root table th:last-child,
+   #team-page-root table td:last-child {
+     border-right: 0 !important;
+   }
+
+   .view table thead th,
+   #team-page-root table thead th {
+     font-size: 10.5px !important;
+     letter-spacing: .035em;
+     padding: 8px 6px !important;
+   }
+
+   .view table tbody tr,
+   #team-page-root table tbody tr {
+     height: 38px;
+   }
+
+   /* Abreviaturas de equipos dentro de las tablas */
+   .view table .team-link,
+   #team-page-root table .team-link {
+     font-size: 0 !important;
+     white-space: nowrap;
+   }
+
+   .view table .team-link .muted,
+   #team-page-root table .team-link .muted {
+     display: inline !important;
+     font-size: 12px !important;
+     font-weight: 750;
+     color: inherit;
+   }
+
+   /* Mantener visible el número de ranking */
+   .view table td:first-child,
+   #team-page-root table td:first-child {
+     text-align: center;
+   }
+ }
+ `;
+ document.head.appendChild(mobileTableStyle);
+})();
+
 const fmt = n => Math.round(Number(n)||0).toLocaleString('es-MX');
 let allData = null;
 let teams = [];
