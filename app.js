@@ -1519,18 +1519,22 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
 })();
 
 
-/* GRIDIRON LAB — alturas exactas para tablas móviles de Estadísticas y Posiciones.
-   No afecta Partidos, escritorio ni Playoff Picture. */
-(function setMobileStatsAndStandingsRowHeights(){
- if(document.getElementById('gridiron-mobile-stats-standings-heights')) return;
+/* GRIDIRON LAB — FIX móvil: alturas reales de filas y separación de logos en Partidos. */
+(function applyMobileTableHeightsAndGameLogoGap(){
+ if(document.getElementById('gridiron-mobile-table-heights-fix')) return;
  const style=document.createElement('style');
- style.id='gridiron-mobile-stats-standings-heights';
+ style.id='gridiron-mobile-table-heights-fix';
  style.textContent=`
-  @media (max-width:700px){
-   /* Encabezados: alto total de 30 px. */
-   #view-estadisticas #stats-offense-panel table > thead > tr > th,
-   #view-estadisticas #stats-defense-panel table > thead > tr > th,
-   #view-tabla table > thead#standings-head > tr > th {
+  @media (max-width:760px){
+   /* Estadísticas ofensivas y defensivas: encabezado con alto fijo de 30 px. */
+   #stats-offense-panel table thead tr,
+   #stats-defense-panel table thead tr,
+   #stats-offense-panel table thead th,
+   #stats-defense-panel table thead th,
+   #view-estadisticas #stats-offense-panel table thead th,
+   #view-estadisticas #stats-defense-panel table thead th,
+   #view-tabla table thead#standings-head tr,
+   #view-tabla table thead#standings-head th {
      height:30px!important;
      min-height:30px!important;
      max-height:30px!important;
@@ -1541,11 +1545,22 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
      vertical-align:middle!important;
    }
 
-   /* Filas de equipos: alto total de 28 px.
-      En Posiciones se excluyen las filas separadoras de grupos/divisiones. */
-   #view-estadisticas #stats-offense-panel table > tbody#offense-table > tr > td,
-   #view-estadisticas #stats-defense-panel table > tbody#defense-table > tr > td,
-   #view-tabla table > tbody#standings-table > tr:not(.standings-group-row) > td {
+   /* Altura de 28 px aplicada a la fila completa y a sus celdas.
+      Evita que la regla móvil anterior de 34 px en tbody tr prevalezca. */
+   #stats-offense-panel table tbody#offense-table tr,
+   #stats-defense-panel table tbody#defense-table tr,
+   #view-estadisticas #stats-offense-panel table tbody#offense-table tr,
+   #view-estadisticas #stats-defense-panel table tbody#defense-table tr,
+   #view-tabla table tbody#standings-table tr:not(.standings-group-row) {
+     height:28px!important;
+     min-height:28px!important;
+     max-height:28px!important;
+   }
+   #stats-offense-panel table tbody#offense-table tr td,
+   #stats-defense-panel table tbody#defense-table tr td,
+   #view-estadisticas #stats-offense-panel table tbody#offense-table tr td,
+   #view-estadisticas #stats-defense-panel table tbody#defense-table tr td,
+   #view-tabla table tbody#standings-table tr:not(.standings-group-row) td {
      height:28px!important;
      min-height:28px!important;
      max-height:28px!important;
@@ -1554,6 +1569,22 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
      padding-bottom:0!important;
      line-height:1!important;
      vertical-align:middle!important;
+   }
+
+   /* Partidos: un poco más de aire entre el escudo y el nombre. */
+   #view-partidos #games-table tr.game-row-full td.team-cell,
+   #view-partidos #games-table tr.game-row-full td.game-away,
+   #view-partidos #games-table tr.game-row-full td.game-home {
+     display:flex!important;
+     align-items:center!important;
+     justify-content:flex-start!important;
+     column-gap:11px!important;
+   }
+   #view-partidos #games-table tr.game-row-full td.team-cell img.team-logo,
+   #view-partidos #games-table tr.game-row-full td.game-away img.team-logo,
+   #view-partidos #games-table tr.game-row-full td.game-home img.team-logo {
+     margin-right:0!important;
+     flex:0 0 24px!important;
    }
   }
  `;
