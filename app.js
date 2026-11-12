@@ -872,10 +872,7 @@ async function init(){
       width:21px!important;height:21px!important;min-width:21px!important;
       min-height:21px!important;flex:0 0 21px!important;margin:0 3px 0 0!important;
     }
-    /* En partidos, el logo queda separado del nombre y el código sigue visible. */
-    .game-row-full .team-cell,.game-row-compact .team-cell{
-      display:table-cell!important;white-space:nowrap!important;
-    }
+    /* En partidos se conserva el display:grid definido por el diseño móvil. */
     .game-row-full .team-cell img.team-logo,
     .game-row-compact .team-cell img.team-logo{
       width:22px!important;height:22px!important;min-width:22px!important;
