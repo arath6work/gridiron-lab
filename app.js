@@ -258,12 +258,12 @@ function gdNum(v){return v==null?'—':fmt(v)}
 function gdCompareTable(g){
  const a=g.awayStats||{},h=g.homeStats||{};
  const rows=[['Puntos',g.awayPts,g.homePts],['Pase neto (yds)',teamStat(a,'passNet'),teamStat(h,'passNet')],['Pase bruto (yds)',a.pass??a.passGross,h.pass??h.passGross],['Completos / intentos',`${gdNum(a.passComp)} / ${gdNum(a.passAtt)}`,`${gdNum(h.passComp)} / ${gdNum(h.passAtt)}`],['TD por pase',a.passTD,h.passTD],['Intercepciones',a.interceptions,h.interceptions],['Capturas permitidas',a.sacksAllowed,h.sacksAllowed],['Carrera (yds)',a.rush,h.rush],['Acarreos',a.rushAtt,h.rushAtt],['TD por carrera',a.rushTD,h.rushTD],['Recepciones',a.receptions,h.receptions],['Yardas recibidas',a.receiving,h.receiving],['TD por recepción',a.receivingTD,h.receivingTD],['Primeros downs',a.firstDowns,h.firstDowns],['3er down',`${gdNum(a.thirdDownConv)} / ${gdNum(a.thirdDownAtt)}`,`${gdNum(h.thirdDownConv)} / ${gdNum(h.thirdDownAtt)}`],['4to down',`${gdNum(a.fourthDownConv)} / ${gdNum(a.fourthDownAtt)}`,`${gdNum(h.fourthDownConv)} / ${gdNum(h.fourthDownAtt)}`],['Castigos (yds)',`${gdNum(a.penalties)} (${gdNum(a.penaltyYards)})`,`${gdNum(h.penalties)} (${gdNum(h.penaltyYards)})`],['Turnovers',a.turnovers,h.turnovers],['Jugadas',a.plays,h.plays],['EPA',a.epa==null?'—':Number(a.epa).toFixed(1),h.epa==null?'—':Number(h.epa).toFixed(1)]];
- return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${teamLogo(g.away)}${g.awayName}</button></th><th><button class="gd-team" data-team-history="${g.home}">${teamLogo(g.home)}${g.homeName}</button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
+ return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${teamLogo(g.away)}<span class="gd-team-label">${g.awayName}</span></button></th><th><button class="gd-team" data-team-history="${g.home}">${teamLogo(g.home)}<span class="gd-team-label">${g.homeName}</span></button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
 }
 function openGameDetail(game){
  ensureGameDetailModal();
  const modal=$('#game-detail-modal');
- $('#gd-title').innerHTML=`${teamLogo(game.away)}${game.awayName} vs. ${teamLogo(game.home)}${game.homeName}`;
+ $('#gd-title').innerHTML=`<span class="gd-matchup-team">${teamLogo(game.away)}<span>${game.awayName}</span></span><span class="gd-matchup-vs">vs.</span><span class="gd-matchup-team">${teamLogo(game.home)}<span>${game.homeName}</span></span>`;
  const detailDateTime=gameLocalDateTime(game);
  $('#gd-sub').textContent=`Temporada ${game.season} · Semana ${game.week} · ${detailDateTime.date}${detailDateTime.time?` · ${detailDateTime.time}`:''} · ${game.status}`;
  const hasStats=!!(game.awayStats||game.homeStats);
@@ -1262,6 +1262,60 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
    }
   `;
   document.head.appendChild(cardsFix);
+ }
+ /* Ajustes de identidad de equipos en móvil: desktop conserva su presentación actual. */
+ if(!document.getElementById('gridiron-mobile-team-alignment')){
+  const teamMobile=document.createElement('style');
+  teamMobile.id='gridiron-mobile-team-alignment';
+  teamMobile.textContent=`
+   @media(max-width:700px){
+    #game-detail-modal .gd-top{display:block!important;position:relative!important;padding-right:76px!important}
+    #game-detail-modal #gd-title{
+      display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+      justify-content:flex-start!important;gap:7px!important;
+      font-size:clamp(19px,5.1vw,23px)!important;line-height:1.2!important;
+    }
+    #game-detail-modal .gd-matchup-team{
+      display:flex!important;align-items:center!important;gap:10px!important;
+      min-width:0!important;width:100%!important;
+    }
+    #game-detail-modal .gd-matchup-team img.team-logo{
+      display:block!important;width:28px!important;height:28px!important;
+      min-width:28px!important;flex:0 0 28px!important;margin:0!important;object-fit:contain!important;
+    }
+    #game-detail-modal .gd-matchup-team>span{display:block!important;min-width:0!important}
+    #game-detail-modal .gd-matchup-vs{display:none!important}
+    #game-detail-modal .gd-close{position:absolute!important;right:0!important;top:0!important}
+    #game-detail-modal .gd-table thead th:nth-child(2),
+    #game-detail-modal .gd-table thead th:nth-child(3){text-align:center!important;vertical-align:middle!important}
+    #game-detail-modal .gd-team{
+      display:flex!important;flex-direction:column!important;align-items:center!important;
+      justify-content:center!important;gap:5px!important;width:100%!important;
+      min-width:0!important;text-align:center!important;white-space:normal!important;
+      line-height:1.2!important;
+    }
+    #game-detail-modal .gd-team img.team-logo{
+      display:block!important;width:29px!important;height:29px!important;
+      min-width:29px!important;flex:0 0 29px!important;margin:0 auto!important;
+      object-fit:contain!important;
+    }
+    #game-detail-modal .gd-team-label{
+      display:block!important;width:100%!important;text-align:center!important;
+      overflow-wrap:anywhere!important;font-size:11px!important;line-height:1.25!important;
+    }
+    #game-detail-modal .gd-table thead th{padding:9px 4px!important}
+    #games-table tr.game-row-full>.game-away,
+    #games-table tr.game-row-full>.game-home{
+      display:flex!important;align-items:center!important;justify-content:flex-start!important;
+      gap:8px!important;text-align:left!important;line-height:1.3!important;
+    }
+    #games-table tr.game-row-full .team-logo{
+      width:24px!important;height:24px!important;min-width:24px!important;
+      flex:0 0 24px!important;margin:0!important;object-fit:contain!important;
+    }
+   }
+  `;
+  document.head.appendChild(teamMobile);
  }
  const sidebar=document.querySelector('.shell>.sidebar');
  const topbar=document.querySelector('.topbar');
