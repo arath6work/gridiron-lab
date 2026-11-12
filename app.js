@@ -1519,74 +1519,141 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
 })();
 
 
-/* GRIDIRON LAB — FIX móvil: alturas reales de filas y separación de logos en Partidos. */
-(function applyMobileTableHeightsAndGameLogoGap(){
- if(document.getElementById('gridiron-mobile-table-heights-fix')) return;
- const style=document.createElement('style');
- style.id='gridiron-mobile-table-heights-fix';
- style.textContent=`
-  @media (max-width:760px){
-   /* Estadísticas ofensivas y defensivas: encabezado con alto fijo de 30 px. */
-   #stats-offense-panel table thead tr,
-   #stats-defense-panel table thead tr,
-   #stats-offense-panel table thead th,
-   #stats-defense-panel table thead th,
-   #view-estadisticas #stats-offense-panel table thead th,
-   #view-estadisticas #stats-defense-panel table thead th,
-   #view-tabla table thead#standings-head tr,
-   #view-tabla table thead#standings-head th {
-     height:30px!important;
-     min-height:30px!important;
-     max-height:30px!important;
-     box-sizing:border-box!important;
-     padding-top:0!important;
-     padding-bottom:0!important;
-     line-height:1!important;
-     vertical-align:middle!important;
-   }
+/* GRIDIRON LAB — AJUSTE MÓVIL DEFINITIVO.
+   Aplica estilos inline importantes a las tablas reales y reaplica el ajuste
+   cuando el renderizador reemplaza encabezados o filas. Solo toca Estadísticas,
+   Posiciones y la separación de logos en Partidos; no toca Playoff Picture. */
+(function gridironMobileFixV2(){
+  const mobile = () => window.matchMedia('(max-width:760px)').matches;
+  // Guarda los estilos inline originales para poder restaurarlos al entrar
+  // en escritorio (incluido el cambio de orientación o el redimensionado).
+  const originalInlineStyles = new Map();
 
-   /* Altura de 28 px aplicada a la fila completa y a sus celdas.
-      Evita que la regla móvil anterior de 34 px en tbody tr prevalezca. */
-   #stats-offense-panel table tbody#offense-table tr,
-   #stats-defense-panel table tbody#defense-table tr,
-   #view-estadisticas #stats-offense-panel table tbody#offense-table tr,
-   #view-estadisticas #stats-defense-panel table tbody#defense-table tr,
-   #view-tabla table tbody#standings-table tr:not(.standings-group-row) {
-     height:28px!important;
-     min-height:28px!important;
-     max-height:28px!important;
-   }
-   #stats-offense-panel table tbody#offense-table tr td,
-   #stats-defense-panel table tbody#defense-table tr td,
-   #view-estadisticas #stats-offense-panel table tbody#offense-table tr td,
-   #view-estadisticas #stats-defense-panel table tbody#defense-table tr td,
-   #view-tabla table tbody#standings-table tr:not(.standings-group-row) td {
-     height:28px!important;
-     min-height:28px!important;
-     max-height:28px!important;
-     box-sizing:border-box!important;
-     padding-top:0!important;
-     padding-bottom:0!important;
-     line-height:1!important;
-     vertical-align:middle!important;
-   }
+  const setImportant = (el, prop, value) => {
+    let props = originalInlineStyles.get(el);
+    if (!props) {
+      props = new Map();
+      originalInlineStyles.set(el, props);
+    }
+    if (!props.has(prop)) {
+      props.set(prop, {
+        value: el.style.getPropertyValue(prop),
+        priority: el.style.getPropertyPriority(prop)
+      });
+    }
+    el.style.setProperty(prop, value, 'important');
+  };
 
-   /* Partidos: un poco más de aire entre el escudo y el nombre. */
-   #view-partidos #games-table tr.game-row-full td.team-cell,
-   #view-partidos #games-table tr.game-row-full td.game-away,
-   #view-partidos #games-table tr.game-row-full td.game-home {
-     display:flex!important;
-     align-items:center!important;
-     justify-content:flex-start!important;
-     column-gap:11px!important;
-   }
-   #view-partidos #games-table tr.game-row-full td.team-cell img.team-logo,
-   #view-partidos #games-table tr.game-row-full td.game-away img.team-logo,
-   #view-partidos #games-table tr.game-row-full td.game-home img.team-logo {
-     margin-right:0!important;
-     flex:0 0 24px!important;
-   }
+  function restoreNode(el, props){
+    props.forEach((original, prop) => {
+      if (original.value) el.style.setProperty(prop, original.value, original.priority);
+      else el.style.removeProperty(prop);
+    });
   }
- `;
- document.head.appendChild(style);
+
+  function restoreAllMobileOverrides(){
+    originalInlineStyles.forEach((props, el) => restoreNode(el, props));
+    originalInlineStyles.clear();
+  }
+
+  function applyMobileFix(){
+    if (!mobile()) {
+      // Importante: evita que los estilos inline móviles se filtren a escritorio.
+      restoreAllMobileOverrides();
+      document.documentElement.removeAttribute('data-gl-mobile-fix');
+      return;
+    }
+
+    // Libera nodos reemplazados por un render anterior para no acumularlos.
+    originalInlineStyles.forEach((props, el) => {
+      if (!el.isConnected) {
+        restoreNode(el, props);
+        originalInlineStyles.delete(el);
+      }
+    });
+    document.documentElement.setAttribute('data-gl-mobile-fix', 'v2');
+
+    // Encabezados de Estadísticas (ofensiva/defensiva) y Posiciones: 30 px.
+    const headerSelectors = [
+      '#view-estadisticas #stats-offense-panel table thead th',
+      '#view-estadisticas #stats-defense-panel table thead th',
+      '#view-tabla table thead#standings-head th'
+    ];
+    document.querySelectorAll(headerSelectors.join(',')).forEach(th => {
+      setImportant(th, 'height', '30px');
+      setImportant(th, 'min-height', '30px');
+      setImportant(th, 'max-height', '30px');
+      setImportant(th, 'box-sizing', 'border-box');
+      setImportant(th, 'padding-top', '0');
+      setImportant(th, 'padding-bottom', '0');
+      setImportant(th, 'line-height', '1');
+      setImportant(th, 'vertical-align', 'middle');
+    });
+
+    // Filas de equipos (no las filas de agrupación divisional): 28 px.
+    const bodySelectors = [
+      '#view-estadisticas #stats-offense-panel tbody#offense-table',
+      '#view-estadisticas #stats-defense-panel tbody#defense-table',
+      '#view-tabla tbody#standings-table'
+    ];
+    document.querySelectorAll(bodySelectors.join(',')).forEach(tbody => {
+      tbody.querySelectorAll(':scope > tr').forEach(tr => {
+        if (tr.classList.contains('standings-group-row')) return;
+        setImportant(tr, 'height', '28px');
+        setImportant(tr, 'min-height', '28px');
+        setImportant(tr, 'max-height', '28px');
+        tr.querySelectorAll(':scope > td').forEach(td => {
+          setImportant(td, 'height', '28px');
+          setImportant(td, 'min-height', '28px');
+          setImportant(td, 'max-height', '28px');
+          setImportant(td, 'box-sizing', 'border-box');
+          setImportant(td, 'padding-top', '0');
+          setImportant(td, 'padding-bottom', '0');
+          setImportant(td, 'line-height', '1');
+          setImportant(td, 'vertical-align', 'middle');
+        });
+      });
+    });
+
+    // En Partidos separa el logo del nombre con 10 px reales de espacio.
+    document.querySelectorAll(
+      '#view-partidos #games-table tr.game-row-full td.game-away, ' +
+      '#view-partidos #games-table tr.game-row-full td.game-home, ' +
+      '#view-partidos #games-table tr.game-row-compact td.game-away, ' +
+      '#view-partidos #games-table tr.game-row-compact td.game-home'
+    ).forEach(cell => {
+      setImportant(cell, 'display', 'flex');
+      setImportant(cell, 'align-items', 'center');
+      setImportant(cell, 'justify-content', 'flex-start');
+      setImportant(cell, 'column-gap', '10px');
+      setImportant(cell, 'white-space', 'nowrap');
+      cell.querySelectorAll('img.team-logo').forEach(img => {
+        setImportant(img, 'display', 'inline-block');
+        setImportant(img, 'width', '24px');
+        setImportant(img, 'height', '24px');
+        setImportant(img, 'min-width', '24px');
+        setImportant(img, 'min-height', '24px');
+        setImportant(img, 'flex', '0 0 24px');
+        setImportant(img, 'margin', '0');
+        setImportant(img, 'object-fit', 'contain');
+      });
+    });
+  }
+
+  // El script se carga al final del body; también cubre si cambia el orden de carga.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyMobileFix, { once: true });
+  } else {
+    applyMobileFix();
+  }
+
+  // Las tablas se reconstruyen al cambiar filtros/temporada; reaplicar tras cada render.
+  const observer = new MutationObserver(() => applyMobileFix());
+  const startObserver = () => {
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.body) startObserver();
+  else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+  window.addEventListener('resize', applyMobileFix, { passive: true });
+  window.addEventListener('orientationchange', applyMobileFix, { passive: true });
 })();
