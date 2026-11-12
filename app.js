@@ -715,7 +715,16 @@ function loadSeason(){
  populateWeekFilter();
 renderGames();renderOffense();renderDefense();renderStandings();renderSortable('standings');renderSortable('offense');renderSortable('defense');renderPower();renderPlayoffs();renderMetrics();renderChart();
 }
+// Conserva la pestaña activa al recargar la página.
+const ACTIVE_VIEW_KEY = 'gridiron-lab-active-view';
+function restoreActiveView(){
+ const savedView = sessionStorage.getItem(ACTIVE_VIEW_KEY);
+ if(!savedView) return;
+ const savedButton = document.querySelector(`.nav-item[data-view="${savedView}"]`);
+ if(savedButton) savedButton.click();
+}
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>{
+ sessionStorage.setItem(ACTIVE_VIEW_KEY, btn.dataset.view);
  const seasonSelect=$('#season'); const latest=newestSeason();
  if(seasonSelect&&latest&&seasonSelect.value!==latest){seasonSelect.value=latest;loadSeason();}
  if(btn.dataset.view==='partidos') populateWeekFilter(true);
@@ -771,6 +780,7 @@ async function init(){
   }
   renderStandingsSubfilters();
   loadSeason();
+  restoreActiveView();
   const teamRoute=location.hash.match(/^#equipo\/([^/]+)/);if(teamRoute)openTeamProfile(decodeURIComponent(teamRoute[1]),false);
  }catch(error){
   console.error(error);
