@@ -1,10 +1,11 @@
 const $ = s => document.querySelector(s);
 
-// Logos NFL centralizados. ESPN CDN como fuente de imagen; si falla, queda la abreviatura.
+// Logos NFL centralizados. ESPN utiliza WSH para Washington (el dataset usa WAS).
 function teamLogo(abbr, className='team-logo'){
- const code=String(abbr||'').toLowerCase().replace(/[^a-z]/g,'');
+ const raw=String(abbr||'').toUpperCase().replace(/[^A-Z]/g,'');
+ const code=({WAS:'wsh'}[raw]||raw.toLowerCase());
  if(!code)return '';
- return `<img class="${className}" src="https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`;
+ return `<img class="${className}" src="https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png" alt="${raw}" loading="lazy" decoding="async" onerror="this.style.display='none'">`;
 }
 function teamIdentity(abbr,name,opts={}){
  const {className='team-identity',nameClass='team-identity-name'}=opts;
@@ -793,20 +794,32 @@ async function init(){
   const style=document.createElement('style');
   style.id='gridiron-team-logo-styles';
   style.textContent=`
-   .team-logo{width:25px;height:25px;object-fit:contain;display:inline-block;flex:0 0 25px;vertical-align:middle}
+   .team-logo{width:27px;height:27px;min-width:27px;min-height:27px;object-fit:contain;display:inline-block!important;flex:0 0 27px;vertical-align:middle;margin-right:9px}
    .team-identity{display:inline-flex;align-items:center;gap:7px;min-width:0;vertical-align:middle}
    .team-identity-name{min-width:0}
-   .team-link .team-logo{width:23px;height:23px;flex-basis:23px}
-   .game-row-full .team-logo,.game-row-compact .team-logo{width:25px;height:25px;flex-basis:25px}
-   .gd-team .team-logo{width:27px;height:27px;flex-basis:27px;margin-right:5px}
+   .team-link{display:inline-flex;align-items:center;gap:9px;white-space:nowrap}.team-link .team-logo{width:25px;height:25px;min-width:25px;flex-basis:25px;margin-right:0}
+   .game-row-full .team-logo,.game-row-compact .team-logo{width:26px;height:26px;min-width:26px;flex-basis:26px;margin-right:8px}
+   .gd-team{display:inline-flex;align-items:center;gap:9px}.gd-team .team-logo{width:28px;height:28px;min-width:28px;flex-basis:28px;margin-right:0}
    .tp-hero .team-logo{width:58px;height:58px;flex-basis:58px}.tp-team-heading{display:flex;align-items:center;gap:12px}.tp-team-heading h1{margin:0}
-   .team-badge .team-logo{width:30px;height:30px;flex-basis:30px}
+   .team-badge{width:auto!important;height:auto!important;min-width:0!important;flex:0 0 auto!important;padding:0!important;margin:0 10px 0 0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;display:inline-flex!important;align-items:center;justify-content:center;overflow:visible!important;font-size:0!important;color:transparent!important}.team-badge .team-logo{width:34px;height:34px;min-width:34px;flex-basis:34px;margin:0!important}
    .power-row .team-badge{display:flex;align-items:center;justify-content:center;overflow:hidden}
    @media(max-width:700px){
-    .team-logo{width:22px;height:22px;flex-basis:22px}
-    .game-row-full .team-logo,.game-row-compact .team-logo{width:22px;height:22px;flex-basis:22px}
+    .team-logo{width:24px;height:24px;min-width:24px;min-height:24px;flex-basis:24px;display:inline-block!important;margin-right:7px}
+    .game-row-full .team-logo,.game-row-compact .team-logo{width:24px;height:24px;min-width:24px;min-height:24px;flex-basis:24px;display:inline-block!important;margin-right:7px}
     .team-identity{gap:5px}
-    .team-link .team-logo{width:21px;height:21px;flex-basis:21px}
+    .team-link{display:inline-flex!important;align-items:center!important;gap:7px!important}.team-link .team-logo{width:22px;height:22px;min-width:22px;flex-basis:22px;margin:0!important}.team-badge .team-logo{width:29px;height:29px;min-width:29px;flex-basis:29px}
+   }
+
+   /* Overrides mobile: logos visibles aunque otras reglas compacten tablas. */
+   @media(max-width:700px){
+    .view table img.team-logo,#team-page-root table img.team-logo,
+    .game-row-full img.team-logo,.game-row-compact img.team-logo,
+    .team-link img.team-logo,.team-badge img.team-logo{
+      display:inline-block!important;visibility:visible!important;opacity:1!important;
+      object-fit:contain!important;vertical-align:middle!important;
+    }
+    .team-badge{background:transparent!important;box-shadow:none!important;border:0!important}
+    .team-id{display:flex;align-items:center;gap:8px}
    }
   `;
   document.head.appendChild(style);
