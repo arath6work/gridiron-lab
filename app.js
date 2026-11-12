@@ -1,74 +1,15 @@
 const $ = s => document.querySelector(s);
 
-// TABLAS COMPACTAS PARA MOVIL — SOLO PRESENTACION
-(function(){
- const mobileTableStyle = document.createElement('style');
- mobileTableStyle.id = 'gridiron-mobile-compact-tables';
- mobileTableStyle.textContent = `
- @media (max-width: 700px) {
-   .view table,
-   #team-page-root table {
-     border-collapse: separate !important;
-     border-spacing: 0 !important;
-     font-size: 12px !important;
-     max-width: 100%;
-   }
-
-   .view table th,
-   .view table td,
-   #team-page-root table th,
-   #team-page-root table td {
-     padding: 8px 7px !important;
-     border-right: 1px solid #dce2e8 !important;
-     border-bottom: 1px solid #e2e7ec !important;
-     line-height: 1.25 !important;
-     white-space: nowrap;
-     font-variant-numeric: tabular-nums;
-   }
-
-   .view table th:last-child,
-   .view table td:last-child,
-   #team-page-root table th:last-child,
-   #team-page-root table td:last-child {
-     border-right: 0 !important;
-   }
-
-   .view table thead th,
-   #team-page-root table thead th {
-     font-size: 10.5px !important;
-     letter-spacing: .035em;
-     padding: 8px 6px !important;
-   }
-
-   .view table tbody tr,
-   #team-page-root table tbody tr {
-     height: 38px;
-   }
-
-   /* Abreviaturas de equipos dentro de las tablas */
-   .view table .team-link,
-   #team-page-root table .team-link {
-     font-size: 0 !important;
-     white-space: nowrap;
-   }
-
-   .view table .team-link .muted,
-   #team-page-root table .team-link .muted {
-     display: inline !important;
-     font-size: 12px !important;
-     font-weight: 750;
-     color: inherit;
-   }
-
-   /* Mantener visible el número de ranking */
-   .view table td:first-child,
-   #team-page-root table td:first-child {
-     text-align: center;
-   }
- }
- `;
- document.head.appendChild(mobileTableStyle);
-})();
+// Logos NFL centralizados. ESPN CDN como fuente de imagen; si falla, queda la abreviatura.
+function teamLogo(abbr, className='team-logo'){
+ const code=String(abbr||'').toLowerCase().replace(/[^a-z]/g,'');
+ if(!code)return '';
+ return `<img class="${className}" src="https://a.espncdn.com/i/teamlogos/nfl/500/${code}.png" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`;
+}
+function teamIdentity(abbr,name,opts={}){
+ const {className='team-identity',nameClass='team-identity-name'}=opts;
+ return `<span class="${className}">${teamLogo(abbr)}<span class="${nameClass}">${name||abbr||''}</span></span>`;
+}
 
 const fmt = n => Math.round(Number(n)||0).toLocaleString('es-MX');
 let allData = null;
@@ -196,8 +137,8 @@ function gameRow(g,compact=false){
  const status = g.status === 'FINAL' ? 'FINAL' : (g.status || 'PROGRAMADO');
  const localDateTime=gameLocalDateTime(g);
  return compact
-  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
-  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${g.awayName} <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">${mobileSchedule ? "" : "@"}</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${g.homeName} <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${mobileSchedule ? "" : status}</span></td></tr>`;
+  ? `<tr class="game-clickable game-row-compact" data-game-id="${g.gameId||''}" tabindex="0" role="button"><td class="game-week">W${g.week}</td><td class="team-cell game-away">${teamLogo(g.away)}<span class="game-team-name">${g.awayName}</span> <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="team-cell game-home">${teamLogo(g.home)}<span class="game-team-name">${g.homeName}</span> <span class="muted">(${g.home})</span></td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="game-datetime">${localDateTime.date}${localDateTime.time?` · ${localDateTime.time}`:''}</td><td class="game-status">${status}</td></tr>`
+  : `<tr class="game-clickable game-row-full" data-game-id="${g.gameId||''}" tabindex="0" role="button" aria-label="Ver estadísticas ${g.awayName} contra ${g.homeName}"><td class="game-week">W${g.week}</td><td class="game-datetime"><span>${localDateTime.date}</span>${localDateTime.time?`<span>${localDateTime.time}</span>`:''}${status==='FINAL'?'<span class="game-mobile-final">FINAL</span>':''}</td><td class="team-cell game-away">${teamLogo(g.away)}<span class="game-team-name">${g.awayName}</span> <span class="muted">(${g.away})</span></td><td class="score game-away-score">${g.awayPts ?? '—'}</td><td class="game-at">${mobileSchedule ? "" : "@"}</td><td class="score game-home-score">${g.homePts ?? '—'}</td><td class="team-cell game-home">${teamLogo(g.home)}<span class="game-team-name">${g.homeName}</span> <span class="muted">(${g.home})</span></td><td class="game-status"><span class="${status==='FINAL'?'status-final':'muted'}">${mobileSchedule ? "" : status}</span></td></tr>`;
 }
 function renderGames(){
  const search=($('#game-search')?.value||'').toLowerCase();
@@ -221,7 +162,7 @@ function renderOffense(){
  };
  const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'offense');
  const table=$('#offense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="offense" data-sort-key="${key}">${label} ↕</th>`).join('');
- table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{let v=teamStat(t,key);
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${teamLogo(t.abbr)}<span class="team-full-name">${t.name}</span> <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{let v=teamStat(t,key);
   // Ajuste visual puntual: ESPN muestra una yarda terrestre adicional para NE en 2026 REG.
   // No modifica el objeto team ni el JSON de origen.
   if(mode==='rush'&&currentSeason()==='2026'&&($('#game-type')?.value||'REG')==='REG'&&t.abbr==='NE'){
@@ -241,7 +182,7 @@ function renderDefense(){
  };
  const cols=columns[mode]||columns.total, list=sortedTeams(teams.filter(t=>(t.name+' '+t.abbr).toLowerCase().includes(q)),'defense');
  const table=$('#defense-table'); table.closest('table').querySelector('thead tr').innerHTML='<th>#</th><th>EQUIPO</th>'+cols.map(([label,key])=>`<th data-sort-table="defense" data-sort-key="${key}">${label} ↕</th>`).join('');
- table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{const v=teamStat(t,key);let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPctAllowed'?(Number(v)*100).toFixed(1)+'%':(['passAvgAllowed','rushAvgAllowed','receivingAvgAllowed','passerRatingAllowed','yardsAllowedPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame','pointsAllowedPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
+ table.innerHTML=list.map((t,i)=>`<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${teamLogo(t.abbr)}<span class="team-full-name">${t.name}</span> <span class="muted">${t.abbr}</span></button></td>`+cols.map(([label,key])=>{const v=teamStat(t,key);let out=v==null?'—':key.toLowerCase().includes('rate')||key==='passPctAllowed'?(Number(v)*100).toFixed(1)+'%':(['passAvgAllowed','rushAvgAllowed','receivingAvgAllowed','passerRatingAllowed','yardsAllowedPerGame','passAllowedPerGame','rushAllowedPerGame','receivingAllowedPerGame','pointsAllowedPerGame'].includes(key)?Number(v||0).toFixed(1):fmt(v));return `<td>${out}</td>`}).join('')+'</tr>').join('')||`<tr><td colspan="${cols.length+2}">Sin resultados.</td></tr>`;
 }
 function ensureGameDetailModal(){
  if($('#game-detail-modal'))return;
@@ -316,12 +257,12 @@ function gdNum(v){return v==null?'—':fmt(v)}
 function gdCompareTable(g){
  const a=g.awayStats||{},h=g.homeStats||{};
  const rows=[['Puntos',g.awayPts,g.homePts],['Pase neto (yds)',teamStat(a,'passNet'),teamStat(h,'passNet')],['Pase bruto (yds)',a.pass??a.passGross,h.pass??h.passGross],['Completos / intentos',`${gdNum(a.passComp)} / ${gdNum(a.passAtt)}`,`${gdNum(h.passComp)} / ${gdNum(h.passAtt)}`],['TD por pase',a.passTD,h.passTD],['Intercepciones',a.interceptions,h.interceptions],['Capturas permitidas',a.sacksAllowed,h.sacksAllowed],['Carrera (yds)',a.rush,h.rush],['Acarreos',a.rushAtt,h.rushAtt],['TD por carrera',a.rushTD,h.rushTD],['Recepciones',a.receptions,h.receptions],['Yardas recibidas',a.receiving,h.receiving],['TD por recepción',a.receivingTD,h.receivingTD],['Primeros downs',a.firstDowns,h.firstDowns],['3er down',`${gdNum(a.thirdDownConv)} / ${gdNum(a.thirdDownAtt)}`,`${gdNum(h.thirdDownConv)} / ${gdNum(h.thirdDownAtt)}`],['4to down',`${gdNum(a.fourthDownConv)} / ${gdNum(a.fourthDownAtt)}`,`${gdNum(h.fourthDownConv)} / ${gdNum(h.fourthDownAtt)}`],['Castigos (yds)',`${gdNum(a.penalties)} (${gdNum(a.penaltyYards)})`,`${gdNum(h.penalties)} (${gdNum(h.penaltyYards)})`],['Turnovers',a.turnovers,h.turnovers],['Jugadas',a.plays,h.plays],['EPA',a.epa==null?'—':Number(a.epa).toFixed(1),h.epa==null?'—':Number(h.epa).toFixed(1)]];
- return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${g.awayName}</button></th><th><button class="gd-team" data-team-history="${g.home}">${g.homeName}</button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
+ return `<table class="gd-table"><thead><tr><th>Estadística</th><th><button class="gd-team" data-team-history="${g.away}">${teamLogo(g.away)}${g.awayName}</button></th><th><button class="gd-team" data-team-history="${g.home}">${teamLogo(g.home)}${g.homeName}</button></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${typeof r[1]==='number'?gdNum(r[1]):r[1]??'—'}</td><td>${typeof r[2]==='number'?gdNum(r[2]):r[2]??'—'}</td></tr>`).join('')}</tbody></table>`;
 }
 function openGameDetail(game){
  ensureGameDetailModal();
  const modal=$('#game-detail-modal');
- $('#gd-title').textContent=`${game.awayName} vs. ${game.homeName}`;
+ $('#gd-title').innerHTML=`${teamLogo(game.away)}${game.awayName} vs. ${teamLogo(game.home)}${game.homeName}`;
  const detailDateTime=gameLocalDateTime(game);
  $('#gd-sub').textContent=`Temporada ${game.season} · Semana ${game.week} · ${detailDateTime.date}${detailDateTime.time?` · ${detailDateTime.time}`:''} · ${game.status}`;
  const hasStats=!!(game.awayStats||game.homeStats);
@@ -447,7 +388,7 @@ function teamProfileMarkup(team){
  const pass=teamStatValue(team,'passNet')||teamStatValue(team,'pass'), rush=teamStatValue(team,'rush');
  const passAllowed=teamStatValue(team,'passAllowedNet')||teamStatValue(team,'passAllowed'), rushAllowed=teamStatValue(team,'rushAllowed');
  const offenseTotal=pass+rush, defenseTotal=passAllowed+rushAllowed;
- return `<div class="tp-wrap"><button class="tp-back" type="button" data-team-back>← Volver</button><header class="tp-hero"><div><div class="tp-kicker">NFL · ${team.conf} · ${team.div}</div><h1>${team.name}</h1><div class="tp-muted">Temporada ${currentSeason()} · ${gp} partidos disputados</div></div><div class="tp-hero-side"><div class="tp-record">${team.w}-${team.l}-${team.t}<div class="tp-muted" style="font-size:12px;font-weight:650">RÉCORD</div></div><div class="tp-standing-badges"><span>${teamStandingsRank(team,'division')}° en ${String(team.div||'').toLowerCase()}</span><span>${teamStandingsRank(team,'conference')}° en ${String(team.conf||'').toLowerCase()}</span></div></div></header>
+ return `<div class="tp-wrap"><button class="tp-back" type="button" data-team-back>← Volver</button><header class="tp-hero"><div><div class="tp-kicker">NFL · ${team.conf} · ${team.div}</div><div class="tp-team-heading">${teamLogo(team.abbr)}<h1>${team.name}</h1></div><div class="tp-muted">Temporada ${currentSeason()} · ${gp} partidos disputados</div></div><div class="tp-hero-side"><div class="tp-record">${team.w}-${team.l}-${team.t}<div class="tp-muted" style="font-size:12px;font-weight:650">RÉCORD</div></div><div class="tp-standing-badges"><span>${teamStandingsRank(team,'division')}° en ${String(team.div||'').toLowerCase()}</span><span>${teamStandingsRank(team,'conference')}° en ${String(team.conf||'').toLowerCase()}</span></div></div></header>
  <section class="tp-group"><h2 class="tp-group-title">Producción ofensiva</h2><div class="tp-metric-layout"><div class="tp-primary-metrics">
  ${teamMetricCard(team,{label:'Puntos anotados',key:'points'})}
  ${teamMetricCard(team,{label:'Yardas totales',key:'totalYards',shareKey:'passNet',shareLabel:{key:'rush',name:'Pase neto',other:'Carrera'}})}
@@ -464,7 +405,7 @@ function teamProfileMarkup(team){
  </div></div></section>
  <section class="tp-section"><h2>Forma reciente</h2><article class="tp-card"><div class="tp-form">${results.map((r,i)=>`<span class="tp-form-chip ${r==='W'?'tp-result-win':r==='L'?'tp-result-loss':''}">${r}</span>`).join('')||'Sin partidos terminados'}</div><div class="tp-streak" style="margin-top:12px">${currentStreak}</div><div class="tp-muted" style="font-size:12px;margin-top:4px">Últimos ${lastFive.length} partidos terminados · del más reciente al más antiguo</div></article></section>
  <section class="tp-section"><h2>Calendario e historial</h2><div class="tp-table-wrap"><table class="tp-table"><thead><tr><th>Semana</th><th>Rival</th><th>Marcador</th><th>Estado</th><th>Resultado</th></tr></thead><tbody>${rows||'<tr><td colspan="5">Sin partidos disponibles.</td></tr>'}</tbody></table></div><div class="tp-muted" style="font-size:12px;margin-top:8px">Ordenado de la semana más antigua a la más reciente.</div></section>
- <section class="tp-section"><h2>Próximos partidos</h2><div class="tp-muted">${upcoming.length?upcoming.map(g=>`<span class="tp-pill" style="margin:0 6px 8px 0">W${g.week} · ${g.awayName} vs ${g.homeName}</span>`).join(''):'No hay partidos pendientes en el calendario disponible.'}</div></section>
+ <section class="tp-section"><h2>Próximos partidos</h2><div class="tp-muted">${upcoming.length?upcoming.map(g=>`<span class="tp-pill" style="margin:0 6px 8px 0">W${g.week} · ${teamLogo(g.away)}${g.awayName} vs ${teamLogo(g.home)}${g.homeName}</span>`).join(''):'No hay partidos pendientes en el calendario disponible.'}</div></section>
  <p class="tp-muted" style="margin-top:24px;font-size:12px">Fuente estadística: nflverse. Las posiciones comparan a los 32 equipos en la temporada seleccionada. Lesiones y probabilidades se integrarán en una siguiente fase.</p></div>`;
 }
 function openTeamProfile(abbr,push=true){
@@ -518,7 +459,7 @@ function renderStandings(){
    const cmp=typeof av==='string'?String(av).localeCompare(String(bv)):((Number(av)||0)-(Number(bv)||0));
    return (state.dir==='asc'?cmp:-cmp)||String(a.name).localeCompare(String(b.name));
  };
- const row=(t,i)=>{const r=t.standingRecords||{};return `<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${t.name} <span class="muted">${t.abbr}</span></button></td><td>${t.div}</td><td>${t.w}</td><td>${t.l}</td><td>${t.t}</td><td>${pct(t).toFixed(3)}</td><td>${recordText(r.local)}</td><td>${recordText(r.visitor)}</td><td>${recordText(r.division)}</td><td>${recordText(r.conference)}</td><td>${recordText(r.interconference)}</td><td>${fmt(t.points)}</td><td>${fmt(t.pointsAllowed)}</td><td class="${t.diff>0?'winner':t.diff<0?'loser':''}">${t.diff>0?'+':''}${fmt(t.diff)}</td></tr>`;};
+ const row=(t,i)=>{const r=t.standingRecords||{};return `<tr><td>${i+1}</td><td class="team-cell"><button class="team-link" data-team-profile="${t.abbr}" type="button">${teamLogo(t.abbr)}<span class="team-full-name">${t.name}</span> <span class="muted">${t.abbr}</span></button></td><td>${t.div}</td><td>${t.w}</td><td>${t.l}</td><td>${t.t}</td><td>${pct(t).toFixed(3)}</td><td>${recordText(r.local)}</td><td>${recordText(r.visitor)}</td><td>${recordText(r.division)}</td><td>${recordText(r.conference)}</td><td>${recordText(r.interconference)}</td><td>${fmt(t.points)}</td><td>${fmt(t.pointsAllowed)}</td><td class="${t.diff>0?'winner':t.diff<0?'loser':''}">${t.diff>0?'+':''}${fmt(t.diff)}</td></tr>`;};
  let html='';
  if(standingsView==='league'){
    const sorted=[...teams].sort(compare);
@@ -537,7 +478,7 @@ function renderStandings(){
 }
 function renderPower(){
  const top=[...teams].sort((a,b)=>(b.diff+b.pct*20)-(a.diff+a.pct*20)).slice(0,5);
- $('#power-list').innerHTML=top.map((t,i)=>`<div class="power-row"><span class="rank">${String(i+1).padStart(2,'0')}</span><div class="team-id"><span class="team-badge">${t.abbr}</span><div>${t.name}<div class="team-record">${t.w}-${t.l}-${t.t} · ${t.conf}</div></div></div><span class="power-score">${Math.round(t.pct*100+t.diff/4)}</span></div>`).join('')||'<p class="muted">Sin datos disponibles.</p>';
+ $('#power-list').innerHTML=top.map((t,i)=>`<div class="power-row"><span class="rank">${String(i+1).padStart(2,'0')}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div>${t.name}<div class="team-record">${t.w}-${t.l}-${t.t} · ${t.conf}</div></div></div><span class="power-score">${Math.round(t.pct*100+t.diff/4)}</span></div>`).join('')||'<p class="muted">Sin datos disponibles.</p>';
 }
 
 function playoffGameIsFinal(g){return gameIsFinal(g);}
@@ -718,7 +659,7 @@ function renderPlayoffs(){
    if(i<4)status='Campeón divisional';
    else if(i<7)status='En zona de Wild Card';
    else status='Fuera de zona · En la pelea';
-   return `<div class="playoff-row"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${t.abbr}</span><div>${t.name}<div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
+   return `<div class="playoff-row"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div>${t.name}<div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
   }).join('');
   $('#'+conf.toLowerCase()+'-playoffs').innerHTML=html||'<p class="muted">Sin datos disponibles.</p>';
  }
@@ -845,6 +786,32 @@ document.querySelectorAll('[data-standings-view]').forEach(btn=>btn.addEventList
 $('#season')?.addEventListener('change',loadSeason);
 $('#game-type')?.addEventListener('change',loadSeason);
 async function init(){
+
+ /* GRIDIRON LAB — logos NFL en todas las vistas. Solo presentación. */
+ (function addTeamLogoStyles(){
+  if(document.getElementById('gridiron-team-logo-styles')) return;
+  const style=document.createElement('style');
+  style.id='gridiron-team-logo-styles';
+  style.textContent=`
+   .team-logo{width:25px;height:25px;object-fit:contain;display:inline-block;flex:0 0 25px;vertical-align:middle}
+   .team-identity{display:inline-flex;align-items:center;gap:7px;min-width:0;vertical-align:middle}
+   .team-identity-name{min-width:0}
+   .team-link .team-logo{width:23px;height:23px;flex-basis:23px}
+   .game-row-full .team-logo,.game-row-compact .team-logo{width:25px;height:25px;flex-basis:25px}
+   .gd-team .team-logo{width:27px;height:27px;flex-basis:27px;margin-right:5px}
+   .tp-hero .team-logo{width:58px;height:58px;flex-basis:58px}.tp-team-heading{display:flex;align-items:center;gap:12px}.tp-team-heading h1{margin:0}
+   .team-badge .team-logo{width:30px;height:30px;flex-basis:30px}
+   .power-row .team-badge{display:flex;align-items:center;justify-content:center;overflow:hidden}
+   @media(max-width:700px){
+    .team-logo{width:22px;height:22px;flex-basis:22px}
+    .game-row-full .team-logo,.game-row-compact .team-logo{width:22px;height:22px;flex-basis:22px}
+    .team-identity{gap:5px}
+    .team-link .team-logo{width:21px;height:21px;flex-basis:21px}
+   }
+  `;
+  document.head.appendChild(style);
+ })();
+
  try{
   const response=await fetch('data/nfl.json?cache='+Date.now(),{cache:'no-store'});
   if(!response.ok)throw new Error('No se pudo cargar data/nfl.json ('+response.status+')');
