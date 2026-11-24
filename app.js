@@ -775,17 +775,45 @@ function playoffConferenceOrder(conf){
  const rest=playoffRankWildcard(conferenceTeams.filter(t=>!selectedSet.has(t.abbr)));
  return [...selected,...rest];
 }
+(function installPlayoffTablesPresentation(){
+ if(document.getElementById('playoff-two-tables-presentation'))return;
+ const style=document.createElement('style');
+ style.id='playoff-two-tables-presentation';
+ style.textContent=`
+/* Playoff Picture: dos tablas por conferencia, sin tocar datos ni orden. */
+#view-playoffs .panel-heading .tag{display:none!important}
+.playoff-list.playoff-tables{display:block!important}
+.playoff-group{border:1px solid var(--line,#d8dee5);border-radius:7px;padding:10px 12px 4px;margin:0 0 12px;background:var(--panel,#fff)}
+.playoff-group h4{margin:0 0 5px;font-size:11px;font-weight:800;letter-spacing:.045em;color:var(--text,#17212b)}
+.playoff-chasing-group{margin-top:12px}
+.playoff-group .playoff-row:last-child{border-bottom:0}
+.playoff-group .playoff-row{border-bottom:1px solid var(--line,#d8dee5)}
+@media(max-width:760px){
+ .playoff-group{padding:9px 9px 3px;margin-bottom:10px}
+ .playoff-group h4{font-size:11px}
+}
+`;
+ document.head.appendChild(style);
+})();
 function renderPlayoffs(){
  for(const conf of ['AFC','NFC']){
   const list=playoffConferenceOrder(conf);
-  const html=list.map((t,i)=>{
-   let status='Fuera de zona de clasificación';
+  const key=conf.toLowerCase();
+  const container=document.getElementById(key+'-playoffs');
+  if(!container)continue;
+  container.classList.add('playoff-tables');
+  container.innerHTML=`<section class="playoff-group"><h4>Clasificados</h4><div class="playoff-list" id="${key}-qualified"></div></section><section class="playoff-group playoff-chasing-group"><h4>En la pelea</h4><div class="playoff-list" id="${key}-chasing"></div></section>`;
+  const renderRows=(slice,offset)=>slice.map((t,index)=>{
+   const i=offset+index;
+   let status='Fuera de zona · En la pelea';
    if(i<4)status='Campeón divisional';
    else if(i<7)status='En zona de Wild Card';
-   else status='Fuera de zona · En la pelea';
-   return `<div class="playoff-row${i===7?' playoff-cutline':''}"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div class="playoff-team-copy">${t.name}<span class="playoff-abbr">${t.abbr}</span><div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
+   return `<div class="playoff-row"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div class="playoff-team-copy">${t.name}<span class="playoff-abbr">${t.abbr}</span><div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
   }).join('');
-  $('#'+conf.toLowerCase()+'-playoffs').innerHTML=html||'<p class="muted">Sin datos disponibles.</p>';
+  const qualified=container.querySelector('#'+key+'-qualified');
+  const chasing=container.querySelector('#'+key+'-chasing');
+  if(qualified)qualified.innerHTML=renderRows(list.slice(0,7),0)||'<p class="muted">Sin datos disponibles.</p>';
+  if(chasing)chasing.innerHTML=renderRows(list.slice(7),7)||'<p class="muted">Sin equipos en la pelea.</p>';
  }
 }
 function renderMetrics(){
