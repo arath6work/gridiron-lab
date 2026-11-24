@@ -783,7 +783,7 @@ function renderPlayoffs(){
    if(i<4)status='Campeón divisional';
    else if(i<7)status='En zona de Wild Card';
    else status='Fuera de zona · En la pelea';
-   return `<div class="playoff-row"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div class="playoff-team-copy">${t.name}<span class="playoff-abbr">${t.abbr}</span><div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
+   return `<div class="playoff-row${i===7?' playoff-cutline':''}"><span class="seed">${i+1}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div class="playoff-team-copy">${t.name}<span class="playoff-abbr">${t.abbr}</span><div class="playoff-record">${t.div} · ${status}</div></div></div><strong>${t.w}-${t.l}-${t.t}</strong></div>`;
   }).join('');
   $('#'+conf.toLowerCase()+'-playoffs').innerHTML=html||'<p class="muted">Sin datos disponibles.</p>';
  }
@@ -1779,4 +1779,32 @@ document.head.insertAdjacentHTML('beforeend','<style>.team-link{border:0;backgro
   else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
   window.addEventListener('resize', applyMobileFix, { passive: true });
   window.addEventListener('orientationchange', applyMobileFix, { passive: true });
+})();
+
+
+/* PLAYOFF PICTURE: nombre limpio en escritorio y corte visual tras los 7 clasificados. */
+(function applyPlayoffPicturePolish(){
+  if(document.getElementById('gridiron-playoff-picture-polish')) return;
+  const style=document.createElement('style');
+  style.id='gridiron-playoff-picture-polish';
+  style.textContent=`
+    @media (min-width:761px){
+      #afc-playoffs .playoff-abbr,
+      #nfc-playoffs .playoff-abbr{display:none!important}
+    }
+    #afc-playoffs .playoff-row.playoff-cutline,
+    #nfc-playoffs .playoff-row.playoff-cutline{
+      margin-top:9px!important;
+      padding-top:12px!important;
+      border-top:1px solid #cbd3dc!important;
+    }
+    @media (max-width:760px){
+      #afc-playoffs .playoff-row.playoff-cutline,
+      #nfc-playoffs .playoff-row.playoff-cutline{
+        margin-top:7px!important;
+        padding-top:9px!important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 })();
