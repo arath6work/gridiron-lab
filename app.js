@@ -478,8 +478,131 @@ function renderStandings(){
  $('#standings-table').innerHTML=html||'<tr><td colspan="15">Sin datos para esta selección.</td></tr>';
 }
 function renderPower(){
- const top=[...teams].sort((a,b)=>(b.diff+b.pct*20)-(a.diff+a.pct*20)).slice(0,5);
- $('#power-list').innerHTML=top.map((t,i)=>`<div class="power-row"><span class="rank">${String(i+1).padStart(2,'0')}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div>${t.name}<div class="team-record">${t.w}-${t.l}-${t.t} · ${t.conf}</div></div></div><span class="power-score">${Math.round(t.pct*100+t.diff/4)}</span></div>`).join('')||'<p class="muted">Sin datos disponibles.</p>';
+ const target=$('#power-list');
+ if(!target)return;
+ const selectedType=String($('#game-type')?.value||'REG').toUpperCase();
+ const finite=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));
+ const number=value=>finite(value)?Number(value):null;
+ const completed=games.filter(g=>gameIsFinal(g)&&(!g.gameType||String(g.gameType).toUpperCase()===selectedType));
+ const gamesFor=abbr=>completed.filter(g=>g.home===abbr||g.away===abbr);
+ const statsFor=(g,abbr)=>g.home===abbr?g.homeStats:g.awayStats;
+ const opponentFor=(g,abbr)=>g.home===abbr?g.away:g.home;
+
+ // Net EPA/play: se prefiere el dato defensivo real; si falta, se obtiene
+ // agregando EPA/jugadas de cada ataque propio y de cada rival enfrentado.
+ const netEPAFor=team=>{
+  if(finite(team.netEpaPerPlay))return Number(team.netEpaPerPlay);
+  const allowed=number(team.epaAllowedPerPlay??team.defEpaPerPlay);
+  if(finite(team.epaPerPlay)&&allowed!==null)return Number(team.epaPerPlay)-allowed;
+  let ownEPA=0,ownPlays=0,oppEPA=0,oppPlays=0;
+  for(const g of gamesFor(team.abbr)){
+   const own=statsFor(g,team.abbr),opp=statsFor(g,opponentFor(g,team.abbr));
+   const oe=number(own?.epa),op=number(own?.plays),de=number(opp?.epa),dp=number(opp?.plays);
+   if(oe!==null&&op!==null&&op>0){ownEPA+=oe;ownPlays+=op;}
+   if(de!==null&&dp!==null&&dp>0){oppEPA+=de;oppPlays+=dp;}
+  }
+  return ownPlays>0&&oppPlays>0?ownEPA/ownPlays-oppEPA/oppPlays:null;
+ };
+ const netEPA=teams.map(netEPAFor);
+ const useEPA=netEPA.length>0&&netEPA.every(v=>v!==null&&Number.isFinite(v));
+ const netYardsPerGame=teams.map(t=>{
+  const gp=Number(t.gp)||0;
+  const forYards=finite(t.yardsPerGame)?Number(t.yardsPerGame):(gp?Number(t.totalYards||0)/gp:0);
+  const againstYards=finite(t.yardsAllowedPerGame)?Number(t.yardsAllowedPerGame):(gp?Number(t.yardsAllowed||0)/gp:0);
+  return forYards-againstYards;
+ });
+ const efficiencyValues=useEPA?netEPA:netYardsPerGame;
+ const efficiencyLabel=useEPA?'Net EPA/play':'yardas netas por partido';
+
+ // Net Success Rate; la versión de datos actual suele incluir solo el dato
+ // ofensivo, así que se exige también la tasa permitida antes de usarla.
+ const netSuccess=teams.map(t=>{
+  if(finite(t.netSuccessRate))return Number(t.netSuccessRate);
+  if(finite(t.successRate)&&finite(t.successRateAllowed))return Number(t.successRate)-Number(t.successRateAllowed);
+  if(finite(t.successPlays)&&finite(t.plays)&&finite(t.successPlaysAllowed)&&finite(t.playsFaced)&&Number(t.plays)>0&&Number(t.playsFaced)>0){
+   return Number(t.successPlays)/Number(t.plays)-Number(t.successPlaysAllowed)/Number(t.playsFaced);
+  }
+  return null;
+ });
+ const useSuccess=netSuccess.length>0&&netSuccess.every(v=>v!==null&&Number.isFinite(v));
+ const thirdDownNet=teams.map(t=>{
+  const offense=number(t.thirdDownRate),defense=number(t.thirdDownRateAllowed);
+  return offense!==null&&defense!==null?offense-defense:0;
+ });
+ const consistencyValues=useSuccess?netSuccess:thirdDownNet;
+ const consistencyLabel=useSuccess?'Net Success Rate':'3er down neto';
+
+ // Fuerza del calendario: porcentaje de victorias de cada rival, excluyendo
+ // sus partidos contra el equipo evaluado para evitar circularidad directa.
+ const opponentPct=(opponent,exclude)=>{
+  let w=0,l=0,t=0;
+  for(const g of completed){
+   if(g.home!==opponent&&g.away!==opponent)continue;
+   if(g.home===exclude||g.away===exclude)continue;
+   const pf=Number(g.home===opponent?g.homePts:g.awayPts);
+   const pa=Number(g.home===opponent?g.awayPts:g.homePts);
+   if(pf>pa)w++;else if(pf<pa)l++;else t++;
+  }
+  const gp=w+l+t;
+  return gp?(w+0.5*t)/gp:null;
+ };
+ const adjustedMargin=teams.map(team=>{
+  const played=gamesFor(team.abbr);
+  const margins=played.map(g=>g.home===team.abbr?Number(g.homePts)-Number(g.awayPts):Number(g.awayPts)-Number(g.homePts));
+  const gp=margins.length||Number(team.gp)||0;
+  const rawMargin=gp?((margins.length?margins.reduce((s,v)=>s+Math.max(-21,Math.min(21,v)),0):Number(team.diff)||0)/gp):0;
+  const sosValues=played.map(g=>opponentPct(opponentFor(g,team.abbr),team.abbr)).filter(v=>v!==null);
+  const sos=sosValues.length?sosValues.reduce((s,v)=>s+v,0)/sosValues.length:0.5;
+  return rawMargin+10*(sos-0.5);
+ });
+ const winPct=teams.map(t=>pct(t));
+
+ // Forma: Net EPA de los últimos cuatro encuentros si está disponible para
+ // todos; en caso contrario, margen de puntos reciente (cada juego limitado
+ // a +/-21 para que una sola goleada no domine el componente).
+ const recentNetEPA=teams.map(team=>{
+  const recent=gamesFor(team.abbr).sort((a,b)=>String(b.gameday||'').localeCompare(String(a.gameday||''))||(Number(b.week)||0)-(Number(a.week)||0)).slice(0,4);
+  const rates=recent.map(g=>{
+   const own=statsFor(g,team.abbr),opp=statsFor(g,opponentFor(g,team.abbr));
+   const oe=number(own?.epa),op=number(own?.plays),de=number(opp?.epa),dp=number(opp?.plays);
+   return oe!==null&&op!==null&&op>0&&de!==null&&dp!==null&&dp>0?oe/op-de/dp:null;
+  });
+  return rates.length&&rates.every(v=>v!==null)?rates.reduce((s,v)=>s+v,0)/rates.length:null;
+ });
+ const useRecentEPA=recentNetEPA.length>0&&recentNetEPA.every(v=>v!==null&&Number.isFinite(v));
+ const recentForm=teams.map(team=>{
+  const recent=gamesFor(team.abbr).sort((a,b)=>String(b.gameday||'').localeCompare(String(a.gameday||''))||(Number(b.week)||0)-(Number(a.week)||0)).slice(0,4);
+  if(!recent.length)return 0;
+  return recent.reduce((sum,g)=>sum+Math.max(-21,Math.min(21,g.home===team.abbr?Number(g.homePts)-Number(g.awayPts):Number(g.awayPts)-Number(g.homePts))),0)/recent.length;
+ });
+ const formValues=useRecentEPA?recentNetEPA:recentForm;
+ const formLabel=useRecentEPA?'Net EPA últimos 4':'diferencial últimos 4';
+
+ // Percentil mid-rank: escala 0-100, con empates compartiendo posición.
+ const percentile=(value,values)=>{
+  const valid=values.filter(v=>v!==null&&Number.isFinite(v));
+  if(valid.length<=1)return 50;
+  const lower=valid.filter(v=>v<value).length;
+  const equal=valid.filter(v=>v===value).length;
+  return 100*(lower+(equal-1)/2)/(valid.length-1);
+ };
+ const components=[
+  {label:efficiencyLabel,weight:35,values:efficiencyValues},
+  {label:consistencyLabel,weight:20,values:consistencyValues},
+  {label:'diferencial ajustado por calendario',weight:20,values:adjustedMargin},
+  {label:'porcentaje de victorias',weight:15,values:winPct},
+  {label:formLabel,weight:10,values:formValues}
+ ];
+ const ranked=teams.map((team,index)=>{
+  const score=components.reduce((sum,c)=>sum+c.weight*percentile(c.values[index],c.values),0)/components.reduce((sum,c)=>sum+c.weight,0);
+  return {team,score};
+ }).sort((a,b)=>b.score-a.score||pct(b.team)-pct(a.team)||(Number(b.team.diff)||0)-(Number(a.team.diff)||0)||String(a.team.name).localeCompare(String(b.team.name)));
+ const methodology=`Índice 0–100 · ${components.map(c=>`${c.label} ${c.weight}%`).join(' · ')}`;
+ target.innerHTML=ranked.slice(0,5).map((item,i)=>{
+  const t=item.team;
+  return `<div class="power-row"><span class="rank">${String(i+1).padStart(2,'0')}</span><div class="team-id"><span class="team-badge">${teamLogo(t.abbr)}</span><div>${t.name}<div class="team-record">${t.w}-${t.l}-${t.t} · ${t.conf}</div></div></div><span class="power-score" title="${methodology}">${item.score.toFixed(1)}</span></div>`;
+ }).join('')||'<p class="muted">Sin datos disponibles.</p>';
+ if(ranked.length)target.insertAdjacentHTML('beforeend',`<div class="power-method-note" style="margin-top:9px;color:#8796a2;font-size:10px;line-height:1.4">${methodology}. Si EPA/Success Rate no están en los datos, se usan los sustitutos indicados.</div>`);
 }
 
 function playoffGameIsFinal(g){return gameIsFinal(g);}
