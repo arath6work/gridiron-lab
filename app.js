@@ -830,7 +830,7 @@ function setupOverviewDashboard(){
   <div class="gl-dashboard">
    <section class="gl-overview-section gl-pulse-section">
     <div class="gl-section-heading">
-     <div><p class="gl-eyebrow">01 / PULSO DE LA SEMANA</p><h2>Panorama de la jornada</h2><p class="gl-subtitle">Un vistazo a los partidos finalizados de la última semana con resultados.</p></div>
+     <div><p class="gl-eyebrow">PULSO DE LA SEMANA</p><h2>Panorama de la jornada</h2><p class="gl-subtitle">Un vistazo a los partidos finalizados de la última semana con resultados.</p></div>
      <span class="gl-week-pill" id="gl-week-pill">SEMANA —</span>
     </div>
     <div class="gl-kpi-grid">
@@ -844,23 +844,23 @@ function setupOverviewDashboard(){
 
    <div class="gl-main-grid">
     <section class="gl-overview-section gl-power-section">
-     <div class="gl-section-heading"><div><p class="gl-eyebrow">02 / POWER RANKING</p><h2>Equipos destacados</h2><p class="gl-subtitle">El índice propio de Gridiron Lab, basado en resultados y rendimiento.</p></div><span class="gl-section-mark">TOP 5</span></div>
+     <div class="gl-section-heading"><div><p class="gl-eyebrow">POWER RANKING</p><h2>Equipos destacados</h2><p class="gl-subtitle">El índice propio de Gridiron Lab, basado en resultados y rendimiento.</p></div><span class="gl-section-mark">TOP 5</span></div>
      <div id="power-list" class="power-list"></div>
     </section>
     <section class="gl-overview-section gl-highlights-section">
-     <div class="gl-section-heading"><div><p class="gl-eyebrow">03 / LO MÁS DESTACADO</p><h2>Historias de la semana</h2><p class="gl-subtitle" id="gl-highlights-subtitle">Los resultados que marcaron la jornada.</p></div></div>
+     <div class="gl-section-heading"><div><p class="gl-eyebrow">LO MÁS DESTACADO</p><h2>Historias de la semana</h2><p class="gl-subtitle" id="gl-highlights-subtitle">Los resultados que marcaron la jornada.</p></div></div>
      <div id="gl-highlights-list" class="gl-highlights-list"><p class="gl-empty">Cargando resultados…</p></div>
     </section>
    </div>
 
    <section class="gl-overview-section gl-efficiency-section">
-    <div class="gl-section-heading"><div><p class="gl-eyebrow">04 / EFICIENCIA DE LA LIGA</p><h2>Quién está ejecutando mejor</h2><p class="gl-subtitle">EPA por jugada cuando el play-by-play está disponible; si no, usamos producción y puntos permitidos por partido.</p></div></div>
+    <div class="gl-section-heading"><div><p class="gl-eyebrow">EFICIENCIA DE LA LIGA</p><h2>Quién está ejecutando mejor</h2><p class="gl-subtitle">EPA por jugada cuando el play-by-play está disponible; si no, usamos producción y puntos permitidos por partido.</p></div></div>
     <div class="gl-efficiency-grid" id="gl-efficiency-grid"><p class="gl-empty">Cargando métricas…</p></div>
     <p class="gl-data-note" id="gl-efficiency-note"></p>
    </section>
 
    <section class="gl-overview-section gl-upcoming-section">
-    <div class="gl-section-heading"><div><p class="gl-eyebrow">05 / LO QUE VIENE</p><h2>Próximos enfrentamientos</h2><p class="gl-subtitle">Los siguientes partidos del calendario de la temporada seleccionada.</p></div><span class="gl-section-mark">AGENDA</span></div>
+    <div class="gl-section-heading"><div><p class="gl-eyebrow">LO QUE VIENE</p><h2>Próximos enfrentamientos</h2><p class="gl-subtitle">Los siguientes partidos del calendario de la temporada seleccionada.</p></div><span class="gl-section-mark">AGENDA</span></div>
     <div class="gl-upcoming-grid" id="gl-upcoming-grid"><p class="gl-empty">Cargando calendario…</p></div>
    </section>
   </div>
@@ -1071,7 +1071,7 @@ function renderOverviewDashboard(){
    const date=when.date&&when.date!=='—'?when.date:String(g.gameday||'Fecha por confirmar');
    const away=teamByAbbr[g.away],home=teamByAbbr[g.home];
    const record=t=>t?`${t.w}-${t.l}-${t.t}`:'—';
-   return `<article class="gl-upcoming-game"><div class="gl-upcoming-meta">SEMANA ${g.week} · ${date}${when.time?` · ${when.time}`:''}</div><div class="gl-upcoming-team">${teamLogo(g.away)}<span>${g.awayName||teamName(g.away)}</span><span class="gl-upcoming-record">${record(away)}</span></div><div class="gl-upcoming-vs">VS</div><div class="gl-upcoming-team">${teamLogo(g.home)}<span>${g.homeName||teamName(g.home)}</span><span class="gl-upcoming-record">${record(home)}</span></div></article>`;
+   return `<article class="gl-upcoming-game"><div class="gl-upcoming-meta">SEMANA ${g.week} · ${date}${when.time?` · ${when.time}`:''}</div><div class="gl-upcoming-team">${teamLogo(g.away)}<span>${g.awayName||teamName(g.away)}</span><span class="gl-upcoming-record">${record(away)}</span></div><div class="gl-upcoming-vs">@</div><div class="gl-upcoming-team">${teamLogo(g.home)}<span>${g.homeName||teamName(g.home)}</span><span class="gl-upcoming-record">${record(home)}</span></div></article>`;
   }).join('')||'<p class="gl-empty">No hay próximos partidos disponibles en el calendario de esta selección.</p>';
  }
 }
