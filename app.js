@@ -349,9 +349,19 @@ function ensureTeamPageStyles(){
  `;document.head.appendChild(st);
 }
 function teamStatValue(t,key){const v=Number(t?.[key]);return Number.isFinite(v)?v:0;}
+function teamMetricPerGame(team,key){
+ const gp=teamStatValue(team,'gp');
+ if(!(gp>0))return null;
+ const total=teamStatValue(team,key);
+ return Number.isFinite(total)?total/gp:null;
+}
 function teamMetricRank(team,key,lowerIsBetter=false){
- const vals=teams.map(t=>teamStatValue(t,key));
- const value=teamStatValue(team,key);
+ // El ranking debe corresponder al valor principal de la tarjeta (/ partido),
+ // no al acumulado de temporada mostrado como dato secundario.
+ const value=teamMetricPerGame(team,key);
+ if(value===null)return '—';
+ const vals=teams.map(t=>teamMetricPerGame(t,key)).filter(v=>v!==null);
+ // Competition ranking: los empates comparten posición.
  return 1+vals.filter(v=>lowerIsBetter?v<value:v>value).length;
 }
 function teamStandingsRank(team,scope){
@@ -374,7 +384,7 @@ function teamMetricCard(team,{label,key,rankKey=key,lower=false,shareKey,shareLa
   const leaguePct=teamLeagueShareAverage(shareKey,shareLabel.key);
   visual=`<div class="tp-breakdown"><div class="tp-donut" style="background:conic-gradient(#f2b632 0 ${pctShare}%,#4f9fc4 ${pctShare}% 100%)"></div><div class="tp-donut-legend"><div><span class="tp-dot" style="background:#f2b632"></span>${shareLabel.name}: ${fmt(a)} yds · ${pctShare}%</div><div><span class="tp-dot" style="background:#4f9fc4"></span>${shareLabel.other}: ${fmt(b)} yds · ${100-pctShare}%</div><div class="tp-league-compare">Promedio liga: ${leaguePct}% pase · ${100-leaguePct}% carrera</div></div></div>`;
  }
- return `<article class="tp-card"><div class="tp-card-top"><div class="tp-label">${label}</div><span class="tp-rank">#${rank}</span></div><div class="tp-value">${average.toFixed(1)}<span class="tp-per-unit"> / partido</span></div><div class="tp-sub">Total de temporada: ${fmt(total)}</div>${visual}</article>`;
+ return `<article class="tp-card"><div class="tp-card-top"><div class="tp-label">${label}</div><span class="tp-rank" title="Posición entre los 32 equipos según el promedio por partido">${rank==='—'?'—':`#${rank}`}</span></div><div class="tp-value">${average.toFixed(1)}<span class="tp-per-unit"> / partido</span></div><div class="tp-sub">Total de temporada: ${fmt(total)}</div>${visual}</article>`;
 }
 function teamProfileMarkup(team){
  const teamGames=games.filter(g=>g.home===team.abbr||g.away===team.abbr).sort((a,b)=>Number(a.week)-Number(b.week)||String(a.gameday||'').localeCompare(String(b.gameday||'')));
