@@ -43,6 +43,75 @@ def has_score(value):
     return value not in ('', None, 'NA', 'nan', 'NaN')
 
 
+def optional_num(row, key):
+    """Return a numeric value, or None when the source field is missing."""
+    value = row.get(key, '')
+    if value in ('', None, 'NA', 'nan', 'NaN'):
+        return None
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def add_game_drive_efficiency(pbp, game_stats_by_id, season):
+    """Attach offensive drive counts and points scored on those drives per team/game.
+
+    Points are measured from posteam_score -> posteam_score_post, so defensive
+    return scores are not incorrectly credited to the offense that lost the ball.
+    The event fields are a compatibility fallback for older rows without score-post
+    columns. fixed_drive is preferred; drive is used if fixed_drive is unavailable.
+    """
+    drives = {}
+    for row in pbp:
+        if str(row.get('season', '')) != str(season):
+            continue
+        game_type = (row.get('game_type') or 'REG').upper()
+        game_id = str(row.get('game_id') or '').strip()
+        offense = (row.get('posteam') or '').strip()
+        defense = (row.get('defteam') or '').strip()
+        drive_id = row.get('fixed_drive')
+        if drive_id in ('', None, 'NA', 'nan', 'NaN'):
+            drive_id = row.get('drive')
+        if drive_id in ('', None, 'NA', 'nan', 'NaN') or not game_id:
+            continue
+        try:
+            drive_num = float(drive_id)
+            drive_key = str(int(drive_num)) if drive_num.is_integer() else str(drive_num)
+        except (ValueError, TypeError):
+            drive_key = str(drive_id).strip()
+        key = (game_type, game_id, drive_key)
+        item = drives.setdefault(key, {'offense': None, 'defense': None, 'points': 0.0})
+        if offense in TEAM_INFO and defense in TEAM_INFO:
+            if item['offense'] is None:
+                item['offense'] = offense
+                item['defense'] = defense
+
+        before = optional_num(row, 'posteam_score')
+        after = optional_num(row, 'posteam_score_post')
+        if before is not None and after is not None and offense in TEAM_INFO:
+            item['points'] += max(0.0, after - before)
+        elif offense in TEAM_INFO:
+            # Fallback for historical rows that do not carry score-before/after.
+            if row.get('td_team') == offense:
+                item['points'] += 6.0
+            if row.get('field_goal_result') == 'made':
+                item['points'] += 3.0
+            if row.get('extra_point_result') == 'good':
+                item['points'] += 1.0
+            if row.get('two_point_conv_result') == 'success':
+                item['points'] += 2.0
+
+    for (game_type, game_id, _), item in drives.items():
+        offense, defense = item['offense'], item['defense']
+        if offense not in TEAM_INFO or defense not in TEAM_INFO:
+            continue
+        game_stats = game_stats_by_id.setdefault((game_type, game_id), {})
+        offense_stats = game_stats.setdefault(offense, {})
+        offense_stats['offensiveDrives'] = offense_stats.get('offensiveDrives', 0) + 1
+        offense_stats['offensiveDrivePoints'] = offense_stats.get('offensiveDrivePoints', 0.0) + item['points']
+
+
 def new_team_stats(abbr):
     if abbr not in TEAM_INFO:
         raise ValueError(f'Código de equipo sin metadata en TEAM_INFO: {abbr}')
@@ -552,70 +621,26 @@ def main():
                 ),
             }
 
-        # Estadísticas situacionales por partido calculadas desde PBP.
-        # Este bloque alimenta EXCLUSIVAMENTE awayStats/homeStats de la ficha
-        # individual. No modifica los acumulados de temporada en `stats`.
-        game_pbp_stats = {}
-        for play in pbp:
-            if str(play.get('season', '')) != str(season):
-                continue
-            game_id = str(play.get('game_id') or '').strip()
-            game_type = (play.get('game_type') or 'REG').upper()
-            offense = (play.get('posteam') or '').strip()
-            if not game_id or offense not in stats:
-                continue
-
-            key = (game_type, game_id, offense)
-            per_game = game_pbp_stats.setdefault(key, {
-                'firstDowns': 0,
-                'thirdDownAtt': 0, 'thirdDownConv': 0,
-                'fourthDownAtt': 0, 'fourthDownConv': 0,
-                'plays': 0, 'epa': 0.0,
-            })
-
-            per_game['firstDowns'] += (
-                num(play, 'first_down_rush')
-                + num(play, 'first_down_pass')
-                + num(play, 'first_down_penalty')
-            )
-
-            down = int(num(play, 'down')) if num(play, 'down') in (1, 2, 3, 4) else 0
-            pass_attempt = num(play, 'pass_attempt') == 1
-            rush_attempt = num(play, 'rush_attempt') == 1
-            if down == 3 and (pass_attempt or rush_attempt):
-                per_game['thirdDownAtt'] += 1
-                if num(play, 'third_down_converted') == 1:
-                    per_game['thirdDownConv'] += 1
-            if down == 4 and (pass_attempt or rush_attempt):
-                per_game['fourthDownAtt'] += 1
-                if num(play, 'fourth_down_converted') == 1:
-                    per_game['fourthDownConv'] += 1
-
-            play_type = play.get('play_type')
-            if play_type in ('pass', 'run') or pass_attempt or rush_attempt:
-                per_game['plays'] += 1
-                epa_value = play.get('epa', '')
-                if epa_value not in ('', None, 'NA', 'nan', 'NaN'):
-                    per_game['epa'] += num(play, 'epa')
-
         for game in cooked_games:
-            game_key = (
-                (game.get('gameType') or 'REG').upper(),
-                str(game.get('gameId') or '')
+            per_team = game_stats_by_id.get(
+                ((game.get('gameType') or 'REG').upper(), str(game.get('gameId') or '')),
+                {}
             )
-            weekly_by_team = game_stats_by_id.get(game_key, {})
-            per_team = {}
-            for abbr in (game['away'], game['home']):
-                # Copia los valores semanales existentes y sustituye solo los
-                # campos situacionales que el PBP permite calcular por partido.
-                team_game_stats = dict(weekly_by_team.get(abbr) or {})
-                pbp_values = game_pbp_stats.get((game_key[0], game_key[1], abbr))
-                if pbp_values is not None:
-                    team_game_stats.update(pbp_values)
-                per_team[abbr] = team_game_stats or None
+            game['awayStats'] = per_team.get(game['away'])
+            game['homeStats'] = per_team.get(game['home'])
 
-            game['awayStats'] = per_team[game['away']]
-            game['homeStats'] = per_team[game['home']]
+        # Serie ofensiva: conteo y puntos de cada posesión, para el Resumen de Gridiron Lab.
+        if pbp_loaded:
+            add_game_drive_efficiency(pbp, game_stats_by_id, season)
+            # Reasignar los registros enriquecidos, ya que el mapa de boxscores
+            # se completa con las métricas de series en este punto.
+            for game in cooked_games:
+                per_team = game_stats_by_id.get(
+                    ((game.get('gameType') or 'REG').upper(), str(game.get('gameId') or '')),
+                    {}
+                )
+                game['awayStats'] = per_team.get(game['away'])
+                game['homeStats'] = per_team.get(game['home'])
 
         def passer_rating(completions, attempts, yards, touchdowns, interceptions):
             if attempts <= 0:
