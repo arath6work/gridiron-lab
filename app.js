@@ -17,6 +17,7 @@ let allData = null;
 let teams = [];
 let games = [];
 let offenseChart = null;
+let powerRankingSnapshot = [];
 const tableSort = { offense: { key: 'totalYards', dir: 'desc' }, defense: { key: 'yardsAllowed', dir: 'asc' }, standings: { key: 'pct', dir: 'desc' } };
 let standingsView = 'league';
 let standingsSubfilter = 'all';
@@ -67,7 +68,7 @@ function renderSortable(kind){if(kind==='offense')renderOffense();if(kind==='def
  if(tableHead){const active=[...tableHead.querySelectorAll('th[data-sort-key]')].find(th=>th.dataset.sortKey===tableSort[kind].key);const idx=active?active.cellIndex:-1;const table=tableHead.closest('table');if(table){table.querySelectorAll('tr').forEach(tr=>[...tr.cells].forEach((cell,i)=>cell.classList.toggle('sorted-column',idx>=0&&i===idx)));}}
 }
 const views = {
-  overview:["El juego, en números.","Estadísticas, tendencias y contexto para cada enfrentamiento."],
+  overview:["Resumen NFL","Lectura semanal, rendimiento de los equipos y próximos enfrentamientos."],
   partidos:["Partidos","Resultados, calendario y registros de cada juego."],
   estadisticas:["Estadísticas de equipo","Compara la producción ofensiva y defensiva de los 32 equipos."],
   tabla:["Posiciones","Clasificación general, por conferencia y por división."],
@@ -597,6 +598,7 @@ function renderPower(){
   const score=components.reduce((sum,c)=>sum+c.weight*percentile(c.values[index],c.values),0)/components.reduce((sum,c)=>sum+c.weight,0);
   return {team,score};
  }).sort((a,b)=>b.score-a.score||pct(b.team)-pct(a.team)||(Number(b.team.diff)||0)-(Number(a.team.diff)||0)||String(a.team.name).localeCompare(String(b.team.name)));
+ powerRankingSnapshot=ranked;
  const methodology=`Índice 0–100 · ${components.map(c=>`${c.label} ${c.weight}%`).join(' · ')}`;
  target.innerHTML=ranked.slice(0,5).map((item,i)=>{
   const t=item.team;
@@ -816,6 +818,264 @@ function renderPlayoffs(){
   if(chasing)chasing.innerHTML=renderRows(list.slice(7),7)||'<p class="muted">Sin equipos en la pelea.</p>';
  }
 }
+function setupOverviewDashboard(){
+ const root=$('#view-overview');
+ if(!root||root.dataset.gridironDashboard==='1')return;
+ root.dataset.gridironDashboard='1';
+ if(document.querySelector('.nav-item.active')?.dataset.view==='overview'){
+  if($('#page-title'))$('#page-title').textContent='Resumen NFL';
+  if($('#page-subtitle'))$('#page-subtitle').textContent='Lectura semanal, rendimiento de los equipos y próximos enfrentamientos.';
+ }
+ root.innerHTML=`
+  <div class="gl-dashboard">
+   <section class="gl-overview-section gl-pulse-section">
+    <div class="gl-section-heading">
+     <div><p class="gl-eyebrow">01 / PULSO DE LA SEMANA</p><h2>Panorama de la jornada</h2><p class="gl-subtitle">Un vistazo a los partidos finalizados de la última semana con resultados.</p></div>
+     <span class="gl-week-pill" id="gl-week-pill">SEMANA —</span>
+    </div>
+    <div class="gl-kpi-grid">
+     <article class="gl-kpi"><span class="gl-kpi-label">PARTIDOS FINALIZADOS</span><strong class="gl-kpi-value" id="gl-kpi-games">—</strong><span class="gl-kpi-foot" id="gl-kpi-games-foot">Última semana con resultados</span></article>
+     <article class="gl-kpi"><span class="gl-kpi-label">PUNTOS POR PARTIDO</span><strong class="gl-kpi-value" id="gl-kpi-points">—</strong><span class="gl-kpi-foot">Promedio combinado de ambos equipos</span></article>
+     <article class="gl-kpi"><span class="gl-kpi-label">PARTIDOS CERRADOS</span><strong class="gl-kpi-value" id="gl-kpi-close">—</strong><span class="gl-kpi-foot">Decididos por 7 puntos o menos</span></article>
+     <article class="gl-kpi"><span class="gl-kpi-label">TURNOVERS</span><strong class="gl-kpi-value" id="gl-kpi-turnovers">—</strong><span class="gl-kpi-foot" id="gl-kpi-turnovers-foot">Pérdidas en los partidos de la semana</span></article>
+    </div>
+    <p class="gl-data-note" id="gl-pulse-note"></p>
+   </section>
+
+   <div class="gl-main-grid">
+    <section class="gl-overview-section gl-power-section">
+     <div class="gl-section-heading"><div><p class="gl-eyebrow">02 / POWER RANKING</p><h2>Equipos destacados</h2><p class="gl-subtitle">El índice propio de Gridiron Lab, basado en resultados y rendimiento.</p></div><span class="gl-section-mark">TOP 5</span></div>
+     <div id="power-list" class="power-list"></div>
+    </section>
+    <section class="gl-overview-section gl-highlights-section">
+     <div class="gl-section-heading"><div><p class="gl-eyebrow">03 / LO MÁS DESTACADO</p><h2>Historias de la semana</h2><p class="gl-subtitle" id="gl-highlights-subtitle">Los resultados que marcaron la jornada.</p></div></div>
+     <div id="gl-highlights-list" class="gl-highlights-list"><p class="gl-empty">Cargando resultados…</p></div>
+    </section>
+   </div>
+
+   <section class="gl-overview-section gl-efficiency-section">
+    <div class="gl-section-heading"><div><p class="gl-eyebrow">04 / EFICIENCIA DE LA LIGA</p><h2>Quién está ejecutando mejor</h2><p class="gl-subtitle">EPA por jugada cuando el play-by-play está disponible; si no, usamos producción y puntos permitidos por partido.</p></div></div>
+    <div class="gl-efficiency-grid" id="gl-efficiency-grid"><p class="gl-empty">Cargando métricas…</p></div>
+    <p class="gl-data-note" id="gl-efficiency-note"></p>
+   </section>
+
+   <section class="gl-overview-section gl-upcoming-section">
+    <div class="gl-section-heading"><div><p class="gl-eyebrow">05 / LO QUE VIENE</p><h2>Próximos enfrentamientos</h2><p class="gl-subtitle">Los siguientes partidos del calendario de la temporada seleccionada.</p></div><span class="gl-section-mark">AGENDA</span></div>
+    <div class="gl-upcoming-grid" id="gl-upcoming-grid"><p class="gl-empty">Cargando calendario…</p></div>
+   </section>
+  </div>
+  <div hidden><table><tbody id="recent-games"></tbody></table></div>`;
+
+ if(!document.getElementById('gridiron-overview-dashboard-styles')){
+  const style=document.createElement('style');style.id='gridiron-overview-dashboard-styles';
+  style.textContent=`
+   #view-overview .gl-dashboard{display:grid;gap:15px;min-width:0}
+   #view-overview .gl-overview-section{min-width:0;background:#fff;border:1px solid #dfe5ea;border-radius:10px;padding:17px 18px;box-shadow:0 2px 8px rgba(15,31,45,.035)}
+   #view-overview .gl-section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px}
+   #view-overview .gl-section-heading h2{font-size:19px;line-height:1.15;margin:3px 0 4px;color:#17212a}
+   #view-overview .gl-eyebrow{font-size:9px;font-weight:850;letter-spacing:1.1px;color:#d20d22;margin:0}
+   #view-overview .gl-subtitle{font-size:11px;line-height:1.45;color:#687583;margin:0}
+   #view-overview .gl-week-pill,#view-overview .gl-section-mark{flex:0 0 auto;border:1px solid #d8dfe5;border-radius:5px;padding:6px 8px;font-size:9px;font-weight:850;letter-spacing:.5px;color:#4f5d69;background:#f8fafb;white-space:nowrap}
+   #view-overview .gl-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+   #view-overview .gl-kpi{min-width:0;border:1px solid #e5e9ed;border-radius:8px;background:#fbfcfd;padding:13px 14px;display:flex;flex-direction:column;gap:5px}
+   #view-overview .gl-kpi-label{font-size:8px;letter-spacing:.7px;font-weight:850;color:#66727e;line-height:1.3}
+   #view-overview .gl-kpi-value{font-size:29px;line-height:1.05;letter-spacing:-.6px;color:#14212b;font-variant-numeric:tabular-nums}
+   #view-overview .gl-kpi-foot{font-size:9px;line-height:1.35;color:#7a8792}
+   #view-overview .gl-data-note{font-size:9px;line-height:1.4;color:#7a8792;margin:10px 0 0}
+   #view-overview .gl-main-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:15px;align-items:stretch}
+   #view-overview .gl-power-section .panel-heading{margin-bottom:9px}
+   #view-overview .gl-power-section #power-list{min-width:0}
+   #view-overview .gl-power-section .power-row{padding:10px 0;border-bottom:1px solid #edf0f2}
+   #view-overview .gl-power-section .power-row:last-of-type{border-bottom:0}
+   #view-overview .gl-power-section .power-method-note{font-size:9px!important;color:#77838d!important}
+   #view-overview .gl-highlights-list{display:grid;gap:0}
+   #view-overview .gl-highlight{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid #edf0f2;min-width:0}
+   #view-overview .gl-highlight:first-child{padding-top:2px}
+   #view-overview .gl-highlight:last-child{border-bottom:0;padding-bottom:2px}
+   #view-overview .gl-highlight-label{display:block;color:#d20d22;font-size:8px;font-weight:850;letter-spacing:.7px;margin-bottom:5px}
+   #view-overview .gl-highlight-match{display:flex;align-items:center;gap:7px;min-width:0;font-size:11px;font-weight:800;color:#1d2933;line-height:1.3}
+   #view-overview .gl-highlight-match img{width:22px;height:22px;min-width:22px;object-fit:contain;margin:0}
+   #view-overview .gl-highlight-match .gl-vs{font-size:9px;color:#89949d;font-weight:700}
+   #view-overview .gl-highlight-meta{font-size:9px;color:#77838d;margin-top:4px;line-height:1.3}
+   #view-overview .gl-highlight-score{font-size:14px;font-weight:850;font-variant-numeric:tabular-nums;color:#18242e;white-space:nowrap}
+   #view-overview .gl-efficiency-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+   #view-overview .gl-eff-card{display:flex;align-items:center;gap:11px;min-width:0;border:1px solid #e5e9ed;border-radius:8px;background:#fbfcfd;padding:13px}
+   #view-overview .gl-eff-card img{width:38px;height:38px;min-width:38px;object-fit:contain;margin:0}
+   #view-overview .gl-eff-copy{min-width:0;flex:1}
+   #view-overview .gl-eff-label{font-size:8px;font-weight:850;letter-spacing:.65px;color:#687581}
+   #view-overview .gl-eff-team{font-size:12px;font-weight:850;color:#1a2630;margin:3px 0;overflow-wrap:anywhere}
+   #view-overview .gl-eff-value{font-size:17px;font-weight:850;color:#14212b;font-variant-numeric:tabular-nums}
+   #view-overview .gl-eff-foot{font-size:9px;color:#78848f;margin-top:2px}
+   #view-overview .gl-upcoming-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+   #view-overview .gl-upcoming-game{border:1px solid #e5e9ed;border-radius:8px;background:#fbfcfd;padding:11px;min-width:0}
+   #view-overview .gl-upcoming-meta{font-size:8px;font-weight:850;letter-spacing:.45px;color:#76828d;margin-bottom:9px}
+   #view-overview .gl-upcoming-team{display:flex;align-items:center;gap:7px;min-width:0;font-size:10px;font-weight:800;color:#202b34;line-height:1.25;margin:5px 0}
+   #view-overview .gl-upcoming-team img{width:23px;height:23px;min-width:23px;object-fit:contain;margin:0}
+   #view-overview .gl-upcoming-team span{min-width:0;overflow-wrap:anywhere}
+   #view-overview .gl-upcoming-record{margin-left:auto;font-size:9px;color:#73808a;font-weight:700;white-space:nowrap}
+   #view-overview .gl-upcoming-vs{font-size:8px;color:#8b969f;margin:0 0 0 30px}
+   #view-overview .gl-empty{font-size:10px;color:#85919b;line-height:1.5;margin:4px 0}
+   #view-overview .gl-power-section .power-row .team-record{font-size:9px}
+   @media(max-width:900px){#view-overview .gl-main-grid{grid-template-columns:minmax(0,1fr)}#view-overview .gl-upcoming-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+   @media(max-width:700px){
+    #view-overview .gl-dashboard{gap:10px}
+    #view-overview .gl-overview-section{padding:13px 12px;border-radius:8px}
+    #view-overview .gl-section-heading{margin-bottom:11px;gap:8px}
+    #view-overview .gl-section-heading h2{font-size:16px}
+    #view-overview .gl-eyebrow{font-size:8px}
+    #view-overview .gl-subtitle{font-size:9px}
+    #view-overview .gl-week-pill,#view-overview .gl-section-mark{font-size:8px;padding:5px 6px}
+    #view-overview .gl-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+    #view-overview .gl-kpi{padding:10px 9px;gap:4px}
+    #view-overview .gl-kpi-label{font-size:7px;letter-spacing:.45px}
+    #view-overview .gl-kpi-value{font-size:25px}
+    #view-overview .gl-kpi-foot{font-size:8px}
+    #view-overview .gl-data-note{font-size:8px;margin-top:8px}
+    #view-overview .gl-main-grid{grid-template-columns:minmax(0,1fr);gap:10px}
+    #view-overview .gl-highlight{padding:10px 0;gap:6px}
+    #view-overview .gl-highlight-match{font-size:10px;gap:5px}
+    #view-overview .gl-highlight-match img{width:20px;height:20px;min-width:20px}
+    #view-overview .gl-highlight-score{font-size:12px}
+    #view-overview .gl-efficiency-grid{grid-template-columns:minmax(0,1fr);gap:7px}
+    #view-overview .gl-eff-card{padding:10px}
+    #view-overview .gl-eff-card img{width:32px;height:32px;min-width:32px}
+    #view-overview .gl-eff-team{font-size:11px}
+    #view-overview .gl-eff-value{font-size:15px}
+    #view-overview .gl-upcoming-grid{grid-template-columns:minmax(0,1fr);gap:7px}
+    #view-overview .gl-upcoming-game{padding:9px}
+    #view-overview .gl-upcoming-team{font-size:10px}
+   }
+  `;
+  document.head.appendChild(style);
+ }
+}
+
+function renderOverviewDashboard(){
+ const root=$('#view-overview');
+ if(!root||root.dataset.gridironDashboard!=='1')return;
+ const selectedType=String($('#game-type')?.value||'REG').toUpperCase();
+ const scopedGames=games.filter(g=>!g.gameType||String(g.gameType).toUpperCase()===selectedType);
+ const completed=scopedGames.filter(g=>gameIsFinal(g));
+ const weeks=[...new Set(completed.map(g=>Number(g.week)).filter(Number.isFinite))].sort((a,b)=>a-b);
+ const nextScheduled=scopedGames.filter(g=>!gameIsFinal(g)&&!['CANCELLED','CANCELED','POSTPONED'].includes(String(g.status||'').toUpperCase())).map(g=>Number(g.week)).filter(Number.isFinite).sort((a,b)=>a-b)[0];
+ const snapshotWeek=weeks.length?weeks[weeks.length-1]:(nextScheduled??null);
+ const weekGames=snapshotWeek===null?[]:scopedGames.filter(g=>Number(g.week)===snapshotWeek);
+ const weekFinals=weekGames.filter(g=>gameIsFinal(g));
+ const setText=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+ const fmtDec=value=>Number.isFinite(Number(value))?Number(value).toFixed(1):'—';
+ setText('gl-week-pill',snapshotWeek===null?'SIN PARTIDOS':`SEMANA ${snapshotWeek}`);
+ setText('gl-kpi-games',weekGames.length?`${weekFinals.length}/${weekGames.length}`:'—');
+ setText('gl-kpi-games-foot',weekGames.length?'Finalizados / programados en la semana':'No hay partidos disponibles');
+ const weeklyPoints=weekFinals.length?weekFinals.reduce((sum,g)=>sum+Number(g.awayPts||0)+Number(g.homePts||0),0)/(weekFinals.length):null;
+ setText('gl-kpi-points',weeklyPoints===null?'—':fmtDec(weeklyPoints));
+ const closeGames=weekFinals.filter(g=>Math.abs(Number(g.homePts)-Number(g.awayPts))<=7).length;
+ setText('gl-kpi-close',weekFinals.length?String(closeGames):'—');
+ const hasTurnovers=weekFinals.length>0&&weekFinals.every(g=>g.awayStats&&g.homeStats&&g.awayStats.turnovers!==null&&g.awayStats.turnovers!==undefined&&g.homeStats.turnovers!==null&&g.homeStats.turnovers!==undefined&&Number.isFinite(Number(g.awayStats.turnovers))&&Number.isFinite(Number(g.homeStats.turnovers)));
+ const turnovers=hasTurnovers?weekFinals.reduce((sum,g)=>sum+Number(g.awayStats.turnovers)+Number(g.homeStats.turnovers),0):null;
+ setText('gl-kpi-turnovers',turnovers===null?'—':String(turnovers));
+ setText('gl-kpi-turnovers-foot',turnovers===null?'Detalle por partido no disponible en el feed':'Pérdidas registradas en la semana');
+ setText('gl-pulse-note',weekFinals.length?`Corte: ${weekFinals.length} partido(s) finalizado(s) de la semana ${snapshotWeek}. Los valores se actualizan al cambiar temporada y tipo de temporada.`:'Aún no hay resultados finalizados para construir el pulso semanal.');
+
+ // Lo más destacado: todos los cálculos usan únicamente marcadores finales de la última semana con resultados.
+ const highlights=$('#gl-highlights-list');
+ if(highlights){
+  if(!weekFinals.length){highlights.innerHTML='<p class="gl-empty">No hay resultados suficientes para destacar partidos en esta semana.</p>';}
+  else{
+   const scoring=[...weekFinals].sort((a,b)=>(Number(b.homePts)+Number(b.awayPts))-(Number(a.homePts)+Number(a.awayPts)))[0];
+   const close=[...weekFinals].sort((a,b)=>Math.abs(Number(a.homePts)-Number(a.awayPts))-Math.abs(Number(b.homePts)-Number(b.awayPts)))[0];
+   const teamRanks=new Map(powerRankingSnapshot.map((item,index)=>[item.team.abbr,{rank:index+1,score:item.score}]));
+   const upsets=weekFinals.map(g=>{
+    const homeWon=Number(g.homePts)>Number(g.awayPts),awayWon=Number(g.awayPts)>Number(g.homePts);
+    if(!homeWon&&!awayWon)return null;
+    const winner=homeWon?g.home:g.away,loser=homeWon?g.away:g.home;
+    const wr=teamRanks.get(winner)?.rank,lr=teamRanks.get(loser)?.rank;
+    return wr&&lr&&wr>lr?{game:g,winner,loser,winnerRank:wr,loserRank:lr,gap:wr-lr}:null;
+   }).filter(Boolean).sort((a,b)=>b.gap-a.gap);
+   const rankedUpset=upsets[0];
+   const matchup=(g)=>`${teamLogo(g.away)}<span>${g.awayName||teamName(g.away)}</span><span class="gl-vs">vs</span>${teamLogo(g.home)}<span>${g.homeName||teamName(g.home)}</span>`;
+   const score=(g)=>`${Number(g.awayPts)} — ${Number(g.homePts)}`;
+   const card=(label,g,meta,extra='')=>`<article class="gl-highlight"><div><span class="gl-highlight-label">${label}</span><div class="gl-highlight-match">${matchup(g)}</div><div class="gl-highlight-meta">${meta}${extra}</div></div><strong class="gl-highlight-score">${score(g)}</strong></article>`;
+   let html=card('PARTIDO MÁS EXPLOSIVO',scoring,`${Number(scoring.awayPts)+Number(scoring.homePts)} puntos combinados · Semana ${scoring.week}`);
+   html+=card('FINAL MÁS CERRADO',close,`Margen de ${Math.abs(Number(close.homePts)-Number(close.awayPts))} punto(s) · Semana ${close.week}`);
+   if(rankedUpset){
+    const g=rankedUpset.game;
+    html+=card('MAYOR SORPRESA · RANKING ACTUAL',g,`${teamName(rankedUpset.winner)} (#${rankedUpset.winnerRank}) venció a ${teamName(rankedUpset.loser)} (#${rankedUpset.loserRank})`, ' · Brecha de posiciones');
+   }else{
+    html+=`<article class="gl-highlight"><div><span class="gl-highlight-label">MAYOR SORPRESA</span><div class="gl-highlight-match">No se detectó una victoria del equipo peor ubicado en el Power Ranking.</div><div class="gl-highlight-meta">Comparación contra el ranking actual de temporada.</div></div><strong class="gl-highlight-score">—</strong></article>`;
+   }
+   highlights.innerHTML=html;
+  }
+ }
+ setText('gl-highlights-subtitle',weekFinals.length?`Semana ${snapshotWeek} · ${weekFinals.length} resultado(s) analizados`:'Pendiente de resultados');
+
+ // Eficiencia: usar EPA solo con cobertura suficiente para ambos lados del balón.
+ const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+ const finalForTeam=abbr=>completed.filter(g=>g.home===abbr||g.away===abbr);
+ const offensiveEPA=team=>{
+  if(finite(team.epaPerPlay))return Number(team.epaPerPlay);
+  if(finite(team.epa)&&finite(team.epaPlays)&&Number(team.epaPlays)>0)return Number(team.epa)/Number(team.epaPlays);
+  let epa=0,plays=0;
+  for(const g of finalForTeam(team.abbr)){
+   const stats=g.home===team.abbr?g.homeStats:g.awayStats;
+   if(finite(stats?.epa)&&finite(stats?.plays)&&Number(stats.plays)>0){epa+=Number(stats.epa);plays+=Number(stats.plays);}
+  }
+  return plays?epa/plays:null;
+ };
+ const defensiveEPA=team=>{
+  if(finite(team.epaAllowedPerPlay))return Number(team.epaAllowedPerPlay);
+  if(finite(team.defEpaPerPlay))return Number(team.defEpaPerPlay);
+  let epa=0,plays=0;
+  for(const g of finalForTeam(team.abbr)){
+   const stats=g.home===team.abbr?g.awayStats:g.homeStats;
+   if(finite(stats?.epa)&&finite(stats?.plays)&&Number(stats.plays)>0){epa+=Number(stats.epa);plays+=Number(stats.plays);}
+  }
+  return plays?epa/plays:null;
+ };
+ const offensive=teams.map(t=>({team:t,value:offensiveEPA(t)})).filter(x=>x.value!==null);
+ const defensive=teams.map(t=>({team:t,value:defensiveEPA(t)})).filter(x=>x.value!==null);
+ const coverageThreshold=Math.min(24,Math.max(1,Math.ceil(teams.length*.75)));
+ const useEPA=teams.length>0&&offensive.length>=coverageThreshold&&defensive.length>=coverageThreshold;
+ let topOffense,topDefense,metricOffense,metricDefense,note='';
+ if(useEPA){
+  topOffense=[...offensive].sort((a,b)=>b.value-a.value)[0];
+  topDefense=[...defensive].sort((a,b)=>a.value-b.value)[0];
+  metricOffense='EPA OFENSIVO / JUGADA';metricDefense='EPA PERMITIDO / JUGADA';
+  note=`EPA/play calculado con datos disponibles para ${offensive.length}/${teams.length} ofensivas y ${defensive.length}/${teams.length} defensas. Menor EPA permitido es mejor.`;
+ }else{
+  const pointsPerGame=t=>finite(t.pointsPerGame)?Number(t.pointsPerGame):(Number(t.gp)>0?Number(t.points||0)/Number(t.gp):null);
+  const pointsAllowedPerGame=t=>finite(t.pointsAllowedPerGame)?Number(t.pointsAllowedPerGame):(Number(t.gp)>0?Number(t.pointsAllowed||0)/Number(t.gp):null);
+  topOffense=teams.filter(t=>pointsPerGame(t)!==null).map(t=>({team:t,value:pointsPerGame(t)})).sort((a,b)=>b.value-a.value)[0];
+  topDefense=teams.filter(t=>pointsAllowedPerGame(t)!==null).map(t=>({team:t,value:pointsAllowedPerGame(t)})).sort((a,b)=>a.value-b.value)[0];
+  metricOffense='PUNTOS ANOTADOS / PARTIDO';metricDefense='PUNTOS PERMITIDOS / PARTIDO';
+  note='El feed actual no tiene cobertura suficiente de EPA ofensivo y defensivo. Se muestran puntos por partido como referencia de producción, no como EPA.';
+ }
+ const efficiency=$('#gl-efficiency-grid');
+ if(efficiency){
+  const efficiencyCard=(item,label,unit)=>item?`<article class="gl-eff-card">${teamLogo(item.team.abbr)}<div class="gl-eff-copy"><div class="gl-eff-label">${label}</div><div class="gl-eff-team">${item.team.name}</div><div class="gl-eff-value">${useEPA?(item.value>0?'+':'')+item.value.toFixed(3):item.value.toFixed(1)} <span style="font-size:9px;font-weight:650;color:#75818c">${unit}</span></div><div class="gl-eff-foot">${item.team.w}-${item.team.l}-${item.team.t} · ${item.team.conf}</div></div></article>`:'<article class="gl-eff-card"><div class="gl-empty">Datos no disponibles.</div></article>';
+  efficiency.innerHTML=efficiencyCard(topOffense,metricOffense,useEPA?'EPA/play':'pts')+efficiencyCard(topDefense,metricDefense,useEPA?'EPA/play':'pts');
+ }
+ setText('gl-efficiency-note',note);
+
+ // Agenda: próximos tres partidos aún no finalizados, ordenados por fecha/semana.
+ const today=new Date();
+ const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+ const pending=scopedGames.filter(g=>!gameIsFinal(g)&&!['CANCELLED','CANCELED','POSTPONED'].includes(String(g.status||'').toUpperCase()));
+ let upcoming=pending.filter(g=>!g.gameday||String(g.gameday).slice(0,10)>=todayKey);
+ if(!upcoming.length)upcoming=pending;
+ upcoming=[...upcoming].sort((a,b)=>String(a.gameday||'9999').localeCompare(String(b.gameday||'9999'))||(Number(a.week)||0)-(Number(b.week)||0)||String(a.gameId||'').localeCompare(String(b.gameId||''))).slice(0,3);
+ const teamByAbbr=Object.fromEntries(teams.map(t=>[t.abbr,t]));
+ const upcomingGrid=$('#gl-upcoming-grid');
+ if(upcomingGrid){
+  upcomingGrid.innerHTML=upcoming.map(g=>{
+   const when=gameLocalDateTime(g);
+   const date=when.date&&when.date!=='—'?when.date:String(g.gameday||'Fecha por confirmar');
+   const away=teamByAbbr[g.away],home=teamByAbbr[g.home];
+   const record=t=>t?`${t.w}-${t.l}-${t.t}`:'—';
+   return `<article class="gl-upcoming-game"><div class="gl-upcoming-meta">SEMANA ${g.week} · ${date}${when.time?` · ${when.time}`:''}</div><div class="gl-upcoming-team">${teamLogo(g.away)}<span>${g.awayName||teamName(g.away)}</span><span class="gl-upcoming-record">${record(away)}</span></div><div class="gl-upcoming-vs">VS</div><div class="gl-upcoming-team">${teamLogo(g.home)}<span>${g.homeName||teamName(g.home)}</span><span class="gl-upcoming-record">${record(home)}</span></div></article>`;
+  }).join('')||'<p class="gl-empty">No hay próximos partidos disponibles en el calendario de esta selección.</p>';
+ }
+}
+
 function renderMetrics(){
  const played=games.filter(g=>g.status==='FINAL'&&g.awayPts!=null&&g.homePts!=null);
  const points=played.reduce((s,g)=>s+g.awayPts+g.homePts,0);
@@ -877,7 +1137,7 @@ function loadSeason(){
  const data=seasonData?.types?.[type] || (type==='REG'?seasonData:null);
  if(!data){ teams=[]; games=[]; } else { teams=data.teams||[]; games=data.games||[]; }
  populateWeekFilter();
-renderGames();renderOffense();renderDefense();renderStandings();renderSortable('standings');renderSortable('offense');renderSortable('defense');renderPower();renderPlayoffs();renderMetrics();renderChart();
+renderGames();renderOffense();renderDefense();renderStandings();renderSortable('standings');renderSortable('offense');renderSortable('defense');renderPower();renderPlayoffs();renderMetrics();renderChart();renderOverviewDashboard();
 }
 // Conserva y restaura la pestaña activa inmediatamente, antes de cargar los datos.
 const ACTIVE_VIEW_KEY = 'gridiron-lab-active-view';
@@ -1058,6 +1318,8 @@ async function init(){
   `;
   document.head.appendChild(style);
  })();
+
+ setupOverviewDashboard();
 
  try{
   const response=await fetch('data/nfl.json?cache='+Date.now(),{cache:'no-store'});
