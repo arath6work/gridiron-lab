@@ -854,7 +854,7 @@ function setupOverviewDashboard(){
    </div>
 
    <section class="gl-overview-section gl-efficiency-section">
-    <div class="gl-section-heading"><div><p class="gl-eyebrow">EFICIENCIA DE LA LIGA</p><h2>Quién está ejecutando mejor</h2><p class="gl-subtitle">EPA por jugada cuando el play-by-play está disponible; si no, usamos producción y puntos permitidos por partido.</p></div></div>
+    <div class="gl-section-heading"><div><p class="gl-eyebrow">EFICIENCIA DE LA LIGA</p><h2>Quién está ejecutando mejor</h2><p class="gl-subtitle">Puntos anotados por serie ofensiva y puntos que permite cada defensa por serie del rival.</p></div></div>
     <div class="gl-efficiency-grid" id="gl-efficiency-grid"><p class="gl-empty">Cargando métricas…</p></div>
     <p class="gl-data-note" id="gl-efficiency-note"></p>
    </section>
@@ -1008,52 +1008,50 @@ function renderOverviewDashboard(){
  }
  setText('gl-highlights-subtitle',weekFinals.length?`Semana ${snapshotWeek} · ${weekFinals.length} resultado(s) analizados`:'Pendiente de resultados');
 
- // Eficiencia: usar EPA solo con cobertura suficiente para ambos lados del balón.
+ // Eficiencia: puntos anotados por serie ofensiva y puntos permitidos por serie rival.
  const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
  const finalForTeam=abbr=>completed.filter(g=>g.home===abbr||g.away===abbr);
- const offensiveEPA=team=>{
-  if(finite(team.epaPerPlay))return Number(team.epaPerPlay);
-  if(finite(team.epa)&&finite(team.epaPlays)&&Number(team.epaPlays)>0)return Number(team.epa)/Number(team.epaPlays);
-  let epa=0,plays=0;
+ const offensivePointsPerDrive=team=>{
+  let points=0,drives=0;
   for(const g of finalForTeam(team.abbr)){
    const stats=g.home===team.abbr?g.homeStats:g.awayStats;
-   if(finite(stats?.epa)&&finite(stats?.plays)&&Number(stats.plays)>0){epa+=Number(stats.epa);plays+=Number(stats.plays);}
+   if(finite(stats?.offensiveDrives)&&finite(stats?.offensiveDrivePoints)){
+    drives+=Number(stats.offensiveDrives);
+    points+=Number(stats.offensiveDrivePoints);
+   }
   }
-  return plays?epa/plays:null;
+  return drives>0?points/drives:null;
  };
- const defensiveEPA=team=>{
-  if(finite(team.epaAllowedPerPlay))return Number(team.epaAllowedPerPlay);
-  if(finite(team.defEpaPerPlay))return Number(team.defEpaPerPlay);
-  let epa=0,plays=0;
+ const defensivePointsAllowedPerDrive=team=>{
+  let pointsAllowed=0,opponentDrives=0;
   for(const g of finalForTeam(team.abbr)){
-   const stats=g.home===team.abbr?g.awayStats:g.homeStats;
-   if(finite(stats?.epa)&&finite(stats?.plays)&&Number(stats.plays)>0){epa+=Number(stats.epa);plays+=Number(stats.plays);}
+   const opponentStats=g.home===team.abbr?g.awayStats:g.homeStats;
+   if(finite(opponentStats?.offensiveDrives)&&finite(opponentStats?.offensiveDrivePoints)){
+    opponentDrives+=Number(opponentStats.offensiveDrives);
+    pointsAllowed+=Number(opponentStats.offensiveDrivePoints);
+   }
   }
-  return plays?epa/plays:null;
+  return opponentDrives>0?pointsAllowed/opponentDrives:null;
  };
- const offensive=teams.map(t=>({team:t,value:offensiveEPA(t)})).filter(x=>x.value!==null);
- const defensive=teams.map(t=>({team:t,value:defensiveEPA(t)})).filter(x=>x.value!==null);
- const coverageThreshold=Math.min(24,Math.max(1,Math.ceil(teams.length*.75)));
- const useEPA=teams.length>0&&offensive.length>=coverageThreshold&&defensive.length>=coverageThreshold;
- let topOffense,topDefense,metricOffense,metricDefense,note='';
- if(useEPA){
-  topOffense=[...offensive].sort((a,b)=>b.value-a.value)[0];
-  topDefense=[...defensive].sort((a,b)=>a.value-b.value)[0];
-  metricOffense='EPA OFENSIVO / JUGADA';metricDefense='EPA PERMITIDO / JUGADA';
-  note=`EPA/play calculado con datos disponibles para ${offensive.length}/${teams.length} ofensivas y ${defensive.length}/${teams.length} defensas. Menor EPA permitido es mejor.`;
- }else{
-  const pointsPerGame=t=>finite(t.pointsPerGame)?Number(t.pointsPerGame):(Number(t.gp)>0?Number(t.points||0)/Number(t.gp):null);
-  const pointsAllowedPerGame=t=>finite(t.pointsAllowedPerGame)?Number(t.pointsAllowedPerGame):(Number(t.gp)>0?Number(t.pointsAllowed||0)/Number(t.gp):null);
-  topOffense=teams.filter(t=>pointsPerGame(t)!==null).map(t=>({team:t,value:pointsPerGame(t)})).sort((a,b)=>b.value-a.value)[0];
-  topDefense=teams.filter(t=>pointsAllowedPerGame(t)!==null).map(t=>({team:t,value:pointsAllowedPerGame(t)})).sort((a,b)=>a.value-b.value)[0];
-  metricOffense='PUNTOS ANOTADOS / PARTIDO';metricDefense='PUNTOS PERMITIDOS / PARTIDO';
-  note='El feed actual no tiene cobertura suficiente de EPA ofensivo y defensivo. Se muestran puntos por partido como referencia de producción, no como EPA.';
- }
+ const offensive=teams.map(t=>({team:t,value:offensivePointsPerDrive(t)})).filter(x=>x.value!==null);
+ const defensive=teams.map(t=>({team:t,value:defensivePointsAllowedPerDrive(t)})).filter(x=>x.value!==null);
+ const topOffense=[...offensive].sort((a,b)=>b.value-a.value)[0];
+ const topDefense=[...defensive].sort((a,b)=>a.value-b.value)[0];
+ const metricOffense='PUNTOS ANOTADOS / SERIE';
+ const metricDefense='PUNTOS PERMITIDOS / SERIE';
  const efficiency=$('#gl-efficiency-grid');
  if(efficiency){
-  const efficiencyCard=(item,label,unit)=>item?`<article class="gl-eff-card">${teamLogo(item.team.abbr)}<div class="gl-eff-copy"><div class="gl-eff-label">${label}</div><div class="gl-eff-team">${item.team.name}</div><div class="gl-eff-value">${useEPA?(item.value>0?'+':'')+item.value.toFixed(3):item.value.toFixed(1)} <span style="font-size:9px;font-weight:650;color:#75818c">${unit}</span></div><div class="gl-eff-foot">${item.team.w}-${item.team.l}-${item.team.t} · ${item.team.conf}</div></div></article>`:'<article class="gl-eff-card"><div class="gl-empty">Datos no disponibles.</div></article>';
-  efficiency.innerHTML=efficiencyCard(topOffense,metricOffense,useEPA?'EPA/play':'pts')+efficiencyCard(topDefense,metricDefense,useEPA?'EPA/play':'pts');
+  const efficiencyCard=(item,label)=>item?`<article class="gl-eff-card">${teamLogo(item.team.abbr)}<div class="gl-eff-copy"><div class="gl-eff-label">${label}</div><div class="gl-eff-team">${item.team.name}</div><div class="gl-eff-value">${item.value.toFixed(2)} <span style="font-size:9px;font-weight:650;color:#75818c">pts/serie</span></div><div class="gl-eff-foot">${item.team.w}-${item.team.l}-${item.team.t} · ${item.team.conf}</div></div></article>`:'<article class="gl-eff-card"><div class="gl-empty">Datos de series no disponibles.</div></article>';
+  efficiency.innerHTML=efficiencyCard(topOffense,metricOffense)+efficiencyCard(topDefense,metricDefense);
  }
+ const offenseCoverage=offensive.length;
+ const defenseCoverage=defensive.length;
+ const noteParts=[];
+ if(offenseCoverage)noteParts.push(`${offenseCoverage}/${teams.length} ofensivas con series registradas`);
+ if(defenseCoverage)noteParts.push(`${defenseCoverage}/${teams.length} defensas evaluadas`);
+ const note=noteParts.length
+  ?`Promedio de puntos por posesión ofensiva. Menor puntuación permitida por serie es mejor. Cobertura: ${noteParts.join(' · ')}.`
+  :'Los datos cargados aún no incluyen el conteo de series. Actualiza data/nfl.json ejecutando el workflow “Update NFL data” en GitHub Actions.';
  setText('gl-efficiency-note',note);
 
  // Agenda: próximos tres partidos aún no finalizados, ordenados por fecha/semana.
